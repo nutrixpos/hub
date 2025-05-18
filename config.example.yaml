@@ -1,0 +1,10 @@
+databases:
+  - name: core
+    type: mongo
+    host: 127.0.0.1
+    port: 27017
+    database: nutrixhub
+    username: ""
+    password: ""
+    
+env: dev
