@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	pos_core_models "github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -56,14 +58,6 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id
 	findOptions.SetSkip(int64(skip))
 	findOptions.SetSort(bson.M{"date": 1})
 	findOptions.SetLimit(int64(page_size))
-	count, err := collection.CountDocuments(ctx, bson.M{
-		"tenant_id": tenant_id,
-	})
-	if err != nil {
-		ss.Logger.Error(err.Error())
-		return salesPerDay, 0, err
-	}
-	totalRecords = int(count)
 
 	cursor, err := collection.Find(ctx, bson.M{
 		"tenant_id": tenant_id,
@@ -73,21 +67,23 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id
 		return salesPerDay, totalRecords, err
 	}
 	defer cursor.Close(ctx)
+	var tenant models.Tenant
 
 	for cursor.Next(context.Background()) {
-		var spd pos_core_models.SalesPerDay
-		if err := cursor.Decode(&spd); err != nil {
+		if err := cursor.Decode(&tenant); err != nil {
 			return salesPerDay, totalRecords, err
 		}
 
-		if spd.Refunds == nil {
-			spd.Refunds = make([]pos_core_models.ItemRefund, 0)
+		for _, spd := range tenant.Sales {
+			if spd.Refunds == nil {
+				spd.Refunds = make([]pos_core_models.ItemRefund, 0)
+			}
+			salesPerDay = append(salesPerDay, spd)
 		}
 
-		salesPerDay = append(salesPerDay, spd)
 	}
 
-	return salesPerDay, totalRecords, nil
+	return salesPerDay, len(tenant.Sales), nil
 }
 
 func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrder []pos_core_models.SalesPerDayOrder) (err error) {
@@ -127,7 +123,11 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 
 		filter := bson.M{
 			"tenant_id": tenant_id,
-			fmt.Sprintf("sales.%s", sales_order.Order.SubmittedAt.Format("2006-01-02")): bson.M{"$exists": true},
+			"sales": bson.M{
+				"$elemMatch": bson.M{
+					"date": sales_order.Order.SubmittedAt.Format("2006-01-02"),
+				},
+			},
 		}
 
 		count, err := collection.CountDocuments(ctx, filter)
@@ -139,12 +139,14 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 			// Date doesn't exist → Add new sales entry
 			update := bson.M{
 				"$push": bson.M{
-					"sales": bson.M{
-						"date":        sales_order.Order.SubmittedAt.Format("2006-01-02"),
-						"orders":      []pos_core_models.Order{sales_order.Order},
-						"refunds":     []pos_core_models.ItemRefund{},
-						"costs":       sales_order.Order.Cost,
-						"total_sales": sales_order.Order.SalePrice,
+					"sales": pos_core_models.SalesPerDay{
+						Id:           primitive.NewObjectID().Hex(),
+						Date:         sales_order.Order.SubmittedAt.Format("2006-01-02"),
+						Orders:       []pos_core_models.SalesPerDayOrder{sales_order},
+						Refunds:      []pos_core_models.ItemRefund{},
+						Costs:        sales_order.Order.Cost,
+						TotalSales:   sales_order.Order.SalePrice,
+						RefundsValue: 0,
 					},
 				},
 			}
@@ -158,7 +160,7 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 				"$push": bson.M{
 					"sales.$[elem].orders": sales_order.Order,
 				},
-				"$set": bson.M{
+				"$inc": bson.M{
 					"sales.$[elem].costs":       sales_order.Order.Cost,
 					"sales.$[elem].total_sales": sales_order.Order.SalePrice,
 				},
@@ -234,7 +236,7 @@ func (ss *SalesService) InsertClientSalesRefunds(tenant_id string, salesPerDayRe
 				"$push": bson.M{
 					"sales": bson.M{
 						"date":   refund.Date.Format("2006-01-02"),
-						"orders": []pos_core_models.Order{},
+						"orders": []pos_core_models.SalesPerDayOrder{},
 						"refunds": []pos_core_models.ItemRefund{
 							{
 								OrderId:         refund.OrderId,
