@@ -156,28 +156,50 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 			}
 
 		} else {
-			update := bson.M{
-				"$push": bson.M{
-					"sales.$[elem].orders": sales_order.Order,
-				},
-				"$inc": bson.M{
-					"sales.$[elem].costs":       sales_order.Order.Cost,
-					"sales.$[elem].total_sales": sales_order.Order.SalePrice,
+
+			// check if sales.$[elem].orders.id already exists
+			filter_salesorder := bson.M{
+				"tenant_id": tenant_id,
+				"sales": bson.M{
+					"$elemMatch": bson.M{
+						"date": sales_order.Order.SubmittedAt.Format("2006-01-02"),
+						"orders": bson.M{
+							"$elemMatch": bson.M{
+								"id": sales_order.Id,
+							},
+						},
+					},
 				},
 			}
-
-			// Array filter: Ensure we only target the sales entry with the matching date
-			arrayFilters := options.ArrayFilters{
-				Filters: []interface{}{
-					bson.M{"elem.date": sales_order.Order.SubmittedAt.Format("2006-01-02")},
-				},
-			}
-
-			opts := options.Update().SetArrayFilters(arrayFilters)
-
-			_, err := collection.UpdateOne(context.TODO(), filter, update, opts)
+			salesorder_count, err := collection.CountDocuments(ctx, filter_salesorder)
 			if err != nil {
-				return fmt.Errorf("failed to add order: %v", err)
+				return err
+			}
+
+			if salesorder_count == 0 {
+				update := bson.M{
+					"$push": bson.M{
+						"sales.$[elem].orders": sales_order,
+					},
+					"$inc": bson.M{
+						"sales.$[elem].costs":       sales_order.Order.Cost,
+						"sales.$[elem].total_sales": sales_order.Order.SalePrice,
+					},
+				}
+
+				// Array filter: Ensure we only target the sales entry with the matching date
+				arrayFilters := options.ArrayFilters{
+					Filters: []interface{}{
+						bson.M{"elem.date": sales_order.Order.SubmittedAt.Format("2006-01-02")},
+					},
+				}
+
+				opts := options.Update().SetArrayFilters(arrayFilters)
+
+				_, err := collection.UpdateOne(context.TODO(), filter, update, opts)
+				if err != nil {
+					return fmt.Errorf("failed to add order: %v", err)
+				}
 			}
 		}
 	}
@@ -260,36 +282,60 @@ func (ss *SalesService) InsertClientSalesRefunds(tenant_id string, salesPerDayRe
 			}
 
 		} else {
-			update := bson.M{
-				"$push": bson.M{
-					"sales.$[elem].refunds": pos_core_models.ItemRefund{
-						OrderId:         refund.OrderId,
-						ItemId:          refund.ItemId,
-						ProductId:       refund.ProductId,
-						Amount:          refund.Amount,
-						Reason:          refund.Reason,
-						ItemCost:        refund.ItemCost,
-						Destination:     refund.Destination,
-						MaterialRerunds: refund.MaterialRerunds,
-						ProductAdd:      refund.ProductAdd,
+
+			// check if sales.$[elem].orders.id already exists
+			filter_salesrefund := bson.M{
+				"tenant_id": tenant_id,
+				"sales": bson.M{
+					"$elemMatch": bson.M{
+						"date": refund.Date.Format("2006-01-02"),
+						"refunds": bson.M{
+							"$elemMatch": bson.M{
+								"id": refund.Id,
+							},
+						},
 					},
 				},
-				"$inc": bson.M{"refunds_value": refund.Amount},
 			}
-
-			// Array filter: Ensure we only target the sales entry with the matching date
-			arrayFilters := options.ArrayFilters{
-				Filters: []interface{}{
-					bson.M{"elem.date": refund.Date.Format("2006-01-02")},
-				},
-			}
-
-			opts := options.Update().SetArrayFilters(arrayFilters)
-
-			_, err := collection.UpdateOne(context.TODO(), filter, update, opts)
+			salesrefund_count, err := collection.CountDocuments(ctx, filter_salesrefund)
 			if err != nil {
-				return fmt.Errorf("failed to add order: %v", err)
+				return err
 			}
+
+			if salesrefund_count == 0 {
+				update := bson.M{
+					"$push": bson.M{
+						"sales.$[elem].refunds": pos_core_models.ItemRefund{
+							Id:              refund.Id,
+							OrderId:         refund.OrderId,
+							ItemId:          refund.ItemId,
+							ProductId:       refund.ProductId,
+							Amount:          refund.Amount,
+							Reason:          refund.Reason,
+							ItemCost:        refund.ItemCost,
+							Destination:     refund.Destination,
+							MaterialRerunds: refund.MaterialRerunds,
+							ProductAdd:      refund.ProductAdd,
+						},
+					},
+					"$inc": bson.M{"sales.$[elem].refunds_value": refund.Amount},
+				}
+
+				// Array filter: Ensure we only target the sales entry with the matching date
+				arrayFilters := options.ArrayFilters{
+					Filters: []interface{}{
+						bson.M{"elem.date": refund.Date.Format("2006-01-02")},
+					},
+				}
+
+				opts := options.Update().SetArrayFilters(arrayFilters)
+
+				_, err := collection.UpdateOne(context.TODO(), filter, update, opts)
+				if err != nil {
+					return fmt.Errorf("failed to add order: %v", err)
+				}
+			}
+
 		}
 	}
 

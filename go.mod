@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/nutrixpos/pos v0.0.21
+	github.com/nutrixpos/pos v0.0.22
 	github.com/zitadel/zitadel-go/v3 v3.2.1
 	go.mongodb.org/mongo-driver v1.17.3
 )

@@ -294,7 +294,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
         productPieChartLabels.value = []
         productPieChartSales.value = []
         isSalesTableLoading.value = true
-        orders_refunds.value = []
+        orders_refunds.value = {}
 
         salesTableTotalRecords.value = response.data.meta.total_records
 
@@ -322,6 +322,9 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
                         productPieChartSales.value[index] += response.data.data[i].orders[j].order.items[k].quantity
                     }   
                 }
+
+
+                temp_sales_log[i].orders[j].order.id =  temp_sales_log[i].orders[j].id
 
                 
             }
@@ -379,6 +382,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
 
 
         isSalesTableLoading.value = false
+        console.log(orders_refunds.value)
 
     })
     .catch(error => {
