@@ -218,7 +218,7 @@ const confirmFinish = (event) => {
 
 const finishOrder = () => {
 
-    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/finish`,
+    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/finish`,
         {},
         {
             headers: {
@@ -235,7 +235,7 @@ const finishOrder = () => {
 
 const startOrder =  () => {
 
-    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_MODULE_CORE_API_PREFIX}/api/orders/${props.order.id}/start`,
+    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/start`,
         {
             "data" : items.value
         },

@@ -8,15 +8,51 @@ import { createPinia } from 'pinia'
 import {  createWebHistory, createRouter } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import { definePreset } from '@primeuix/themes';
+import zitadelAuth from "@/services/zitadelAuth";
+
 
 
 // Import PrimeVue CSS
 import 'primeicons/primeicons.css';                           // icons
 
-
-const routes = [
+const secure_routes = [
     {
-        path: '/console',
+        path: '/', alias: ['/console'],
+        meta: {
+            authName: zitadelAuth.oidcAuth.authName
+        },
+        component: ()=>{
+            if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("cashier") ) {
+                return import('@/pages/Console.vue')
+            }
+            return import('@/pages/NoAccessView.vue')
+        },
+        children: [
+            {
+                path: 'sales',
+                component: () => import('@/pages/Sales.vue')
+            },
+            {
+                path: 'keys',
+                component: () => import('@/pages/Keys.vue')
+            },
+        ],
+    },
+    {
+        path: '/login',
+        meta: {
+            authName: zitadelAuth.oidcAuth.authName
+        },
+        component: ()=>{
+            return import('@/pages/Login.vue')
+        },
+    },
+  ]
+
+
+const insecure_routes = [
+    {
+        path: '/', alias: ['/console'],
         component: ()=>{
             return import('@/pages/Console.vue')
         },
@@ -25,6 +61,10 @@ const routes = [
                 path: 'sales',
                 component: () => import('@/pages/Sales.vue')
             },
+            {
+                path: 'keys',
+                component: () => import('@/pages/Keys.vue')
+            },
         ],
     },
     {
@@ -32,12 +72,6 @@ const routes = [
         component: ()=>{
             return import('@/pages/Login.vue')
         },
-    },
-    { 
-        path: '/', alias:['/home'], 
-        component: () => {
-            return import('@/pages/Login.vue')
-        }
     },
   ]
 
@@ -134,23 +168,58 @@ const routes = [
     }
   });
 
-
-const router = createRouter({
+  const secureRouter = createRouter({
     history: createWebHistory(),
-    routes: routes,
+    routes: secure_routes,
   })
+  
+  const insecureRouter = createRouter({
+    history: createWebHistory(),
+    routes: insecure_routes,
+  })
+  
 
-createApp(App)
-.use(router)
-.use(PrimeVue, {
-    theme: {
-        preset: preset,
-        options: {
-            darkModeSelector: '.my-app-dark',
+
+  if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true'){
+    zitadelAuth.oidcAuth.useRouter(secureRouter)
+  
+    zitadelAuth.oidcAuth.startup().then(ok => {
+      if (ok) {
+            const app = createApp(App).use(createPinia())
+            app.config.globalProperties.$zitadel = zitadelAuth
+
+
+            app
+            .use(secureRouter)
+            .use(PrimeVue, {
+                theme: {
+                    preset: preset,
+                    options: {
+                        darkModeSelector: '.my-app-dark',
+                    }
+                }
+            })
+            .use(ToastService)
+            .use(i18n)
+            .mount('#app')
+      } else {
+          console.error('Zitadel startup was not ok')
+      }
+    })
+  } else {
+    const app = createApp(App).use(createPinia())
+  
+    app
+    .use(insecureRouter)
+    .use(PrimeVue, {
+        theme: {
+            preset: preset,
+            options: {
+                darkModeSelector: '.my-app-dark',
+            }
         }
-    }
- })
- .use(ToastService)
- .use(i18n)
- .use(createPinia())
- .mount('#app')
+    })
+    .use(ToastService)
+    .use(i18n)
+    .mount('#app')
+  }
