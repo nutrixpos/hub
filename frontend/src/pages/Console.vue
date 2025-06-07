@@ -2,7 +2,7 @@
     <div v-if="!loading" class="h-full">
         <div class="grid p-0 m-0 h-full">
             <div class="col-12 p-0">
-                <Toolbar style="border-radius: 0px;flex-shrink: 0;background-color:var(--p-gray-800);border: 0px;color:white;" class="py-1 lg:py-2">
+                <Toolbar style="border-radius: 0px;flex-shrink: 0;background-color:#001529;border: 0px;color:white;" class="py-1 lg:py-2">
                     <template #start>
                         <router-link to="/">
                             <span style="color:var(--p-button-secondary-background) !important;" class="text-xl font-bold">nutrixhub</span>

@@ -6,5 +6,7 @@ databases:
     database: nutrixhub
     username: ""
     password: ""
+    tables:
+      sales: client_sales
     
 env: dev

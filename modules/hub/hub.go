@@ -4,10 +4,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/modules/hub/handlers"
 	"github.com/nutrixpos/hub/modules/hub/models"
+	"github.com/nutrixpos/hub/modules/hub/services"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	pos_middlewares "github.com/nutrixpos/pos/modules/core/middlewares"
-	"github.com/nutrixpos/pos/modules/hubsync/services"
 )
 
 type HubModule struct {
@@ -49,7 +49,7 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 func (h *HubModule) EnsureSeeded() error {
 
 	seeder_svc := services.SeederService{
-		Config: h.Config,
+		Config: &h.Config,
 		Logger: h.Logger,
 	}
 

@@ -9,7 +9,7 @@ const zitadelAuth: { oidcAuth: OidcAuth; hasRole: (role: string) => any } = crea
 }, 
 "Zitadel",
 SignInType.Window,
-"http://localhost:3001/",
+import.meta.env.VITE_APP_ZITADEL_REDIRECT_URL,
 {
   post_logout_redirect_uri:import.meta.env.VITE_APP_ZITADEL_ISSUER,
 }

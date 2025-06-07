@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -66,11 +67,17 @@ func main() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    "0.0.0.0:8081",
+		Addr:    ":8081",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	// Force IPv4 by listening on "tcp4"
+	listener, err := net.Listen("tcp4", ":8081")
+	if err != nil {
+		panic(err)
+	}
+
+	log.Fatal(srv.Serve(listener))
 }
