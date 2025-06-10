@@ -8,22 +8,6 @@
                             <span style="color:var(--p-button-secondary-background) !important;" class="text-xl font-bold">nutrixhub</span>
                         </router-link>
                     </template>
-
-                    <template #end>
-                        <Button  severity="secondary" size="large"  text rounded aria-label="Profile" label="Profile" @click.stop="user_profile_toggle">
-                            <span style="font-size:0.9rem;" class="mr-2">{{ user?.name }}</span>
-                            <span class="p-button-icon pi pi-user"></span>
-                        </Button>
-                        <OverlayPanel ref="user_profile_op" class="lg:w-2 md:w-3">
-                            <div class="flex flex-column">
-                                <span>Welcome <strong>{{ user?.name }}</strong></span>
-                                <div class="mt-2">
-                                    <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
-                                </div>
-                                <Button class="mt-5" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="proxy.$zitadel?.oidcAuth.signOut()" />
-                            </div>
-                        </OverlayPanel>
-                    </template>
                 </Toolbar>
             </div>
             <div class="col-12 h-full">
@@ -42,13 +26,16 @@
                                 </router-link>
                             </template>
                             <template #end>
-                                <button v-ripple class="relative overflow-hidden w-full border-0 bg-transparent flex items-start p-2 pl-4 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-none cursor-pointer transition-colors duration-200">
-                                    <Avatar image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png" class="mr-2" shape="circle" />
+                                <button v-ripple class="flex align-items-end relative overflow-hidden w-full border-0 bg-transparent flex items-start p-2 pl-4 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-none cursor-pointer transition-colors duration-200">
+                                    <Avatar icon="pi pi-user" class="mr-2" shape="circle" />
                                     <span class="inline-flex flex-col items-start">
-                                        <span class="font-bold">Amy Elsner</span>
-                                        <span class="text-sm">Admin</span>
+                                        <span class="font-bold">{{ user?.name }}</span>
+                                        <span class="text-sm">
+                                            <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                                        </span>
                                     </span>
                                 </button>
+                                <Button class="w-full text-start" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="proxy.$zitadel?.oidcAuth.signOut()" />                            
                             </template>
                         </Menu>
 
@@ -75,9 +62,8 @@ import Button from "primevue/button";
 import { useI18n } from 'vue-i18n'
 import { globalStore } from '@/stores';
 import axios from "axios";
-import OverlayPanel from "primevue/overlaypanel";
 import ProgressSpinner from "primevue/progressspinner";
-import {Menu} from 'primevue';
+import {Menu,Avatar} from 'primevue';
 
 
 const { proxy } = getCurrentInstance();
@@ -127,29 +113,6 @@ const items = ref([
                 icon: 'pi pi-chart-line',
                 link: '/console/sales',
             },
-            {
-                label: 'Orders',
-                icon: 'pi pi-box',
-            },
-
-            {
-                label: 'Inventory',
-                icon: 'pi pi-inbox',
-            }
-        ]
-    },
-    {
-        label: 'Admin',
-        items: [
-            {
-                label: 'API Keys',
-                icon: 'pi pi-key',
-                link: '/console/keys',
-            },
-            {
-                label: 'Logout',
-                icon: 'pi pi-sign-out',
-            }
         ]
     },
     {

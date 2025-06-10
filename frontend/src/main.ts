@@ -32,10 +32,6 @@ const secure_routes = [
                 path: 'sales',
                 component: () => import('@/pages/Sales.vue')
             },
-            {
-                path: 'keys',
-                component: () => import('@/pages/Keys.vue')
-            },
         ],
     },
     {
@@ -60,10 +56,6 @@ const insecure_routes = [
             {
                 path: 'sales',
                 component: () => import('@/pages/Sales.vue')
-            },
-            {
-                path: 'keys',
-                component: () => import('@/pages/Keys.vue')
             },
         ],
     },
