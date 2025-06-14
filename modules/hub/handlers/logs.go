@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/nutrixpos/hub/common"
-	"github.com/nutrixpos/hub/services"
+	"github.com/nutrixpos/hub/modules/hub/models"
+	"github.com/nutrixpos/hub/modules/hub/services"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	core_models "github.com/nutrixpos/pos/modules/core/models"
@@ -18,9 +21,45 @@ import (
 
 func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tenant_id := r.URL.Query().Get("tenant_id")
+
+		token := r.Header.Get("X-Userinfo")
+		if token == "" {
+			http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+			return
+		}
+
+		decodedData, err := base64.StdEncoding.DecodeString(token)
+		if err != nil {
+			http.Error(w, "Failed to decode token", http.StatusBadRequest)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		// Create a map to hold the decoded JSON data
+		var claims map[string]interface{}
+
+		// Unmarshal the decoded data into the map
+		err = json.Unmarshal(decodedData, &claims)
+		if err != nil {
+			log.Fatal("Error unmarshaling JSON data:", err)
+		}
+
+		// fmt.Printf("Decoded claims:\n")
+		// for k, v := range claims {
+		// 	fmt.Printf("%s: %v\n", k, v)
+		// }
+
+		tenant_id := claims["urn:zitadel:iam:user:resourceowner:id"].(string)
 		if tenant_id == "" {
-			http.Error(w, "tenant_id query string is required", http.StatusBadRequest)
+			http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
+			logger.Error("ERROR: tenant_id claim is required")
+			return
+		}
+
+		label := claims["name"].(string)
+		if label == "" {
+			http.Error(w, "name claim is required", http.StatusBadRequest)
+			logger.Error("ERROR: name claim is required")
 			return
 		}
 
@@ -51,8 +90,8 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		if len(request_body.Data) > 0 {
 
-			client_sales_orders := make([]core_models.SalesPerDayOrder, 0)
-			client_sales_refunds := make([]core_models.LogOrderItemRefund, 0)
+			client_sales_orders := make([]models.SalesPerDayOrder, 0)
+			client_sales_refunds := make([]models.LogOrderItemRefund, 0)
 
 			for _, v := range request_body.Data {
 
@@ -73,7 +112,7 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 				case core_models.LogTypeSalesPerDayOrder:
 
-					var db_log core_models.LogSalesPerDayOrder
+					var db_log models.LogSalesPerDayOrder
 					decoder, _ = mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 						DecodeHook: common.StringToTimeHook(),
 						Result:     &db_log,
@@ -84,12 +123,18 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 						logger.Error(fmt.Sprintf("Failed to decode log: %v", err))
 						continue
 					}
+
+					db_log.Labels = []string{}
+					db_log.SalesPerDayOrder.Labels = []string{}
+
+					db_log.Labels = append(db_log.Labels, label)
+					db_log.SalesPerDayOrder.Labels = append(db_log.SalesPerDayOrder.Labels, label)
 
 					client_sales_orders = append(client_sales_orders, db_log.SalesPerDayOrder)
 
 				case core_models.LogTypeOrderItemRefunded:
 
-					var db_log core_models.LogOrderItemRefund
+					var db_log models.LogOrderItemRefund
 					decoder, _ = mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 						DecodeHook: common.StringToTimeHook(),
 						Result:     &db_log,
@@ -100,6 +145,9 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 						logger.Error(fmt.Sprintf("Failed to decode log: %v", err))
 						continue
 					}
+
+					db_log.Labels = []string{}
+					db_log.Labels = append(db_log.Labels, label)
 
 					client_sales_refunds = append(client_sales_refunds, db_log)
 

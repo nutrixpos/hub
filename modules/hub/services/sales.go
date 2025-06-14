@@ -86,7 +86,7 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id
 	return salesPerDay, len(tenant.Sales), nil
 }
 
-func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrder []pos_core_models.SalesPerDayOrder) (err error) {
+func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrder []models.SalesPerDayOrder) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
@@ -139,10 +139,10 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 			// Date doesn't exist → Add new sales entry
 			update := bson.M{
 				"$push": bson.M{
-					"sales": pos_core_models.SalesPerDay{
+					"sales": models.SalesPerDay{
 						Id:           primitive.NewObjectID().Hex(),
 						Date:         sales_order.Order.SubmittedAt.Format("2006-01-02"),
-						Orders:       []pos_core_models.SalesPerDayOrder{sales_order},
+						Orders:       []models.SalesPerDayOrder{sales_order},
 						Refunds:      []pos_core_models.ItemRefund{},
 						Costs:        sales_order.Order.Cost,
 						TotalSales:   sales_order.Order.SalePrice,
@@ -207,7 +207,7 @@ func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrd
 	return nil
 }
 
-func (ss *SalesService) InsertClientSalesRefunds(tenant_id string, salesPerDayRefunds []pos_core_models.LogOrderItemRefund) (err error) {
+func (ss *SalesService) InsertClientSalesRefunds(tenant_id string, salesPerDayRefunds []models.LogOrderItemRefund) (err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
@@ -258,7 +258,7 @@ func (ss *SalesService) InsertClientSalesRefunds(tenant_id string, salesPerDayRe
 				"$push": bson.M{
 					"sales": bson.M{
 						"date":   refund.Date.Format("2006-01-02"),
-						"orders": []pos_core_models.SalesPerDayOrder{},
+						"orders": []models.SalesPerDayOrder{},
 						"refunds": []pos_core_models.ItemRefund{
 							{
 								OrderId:         refund.OrderId,

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/nutrixpos/hub/services"
+	"github.com/nutrixpos/hub/modules/hub/services"
 	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
