@@ -60,6 +60,13 @@
                                                     {{ slotProps.data.order.display_id }}
                                                 </template>
                                             </Column>
+                                            <Column field="order.labels" header="Labels">
+                                                <template #body="slotProps">
+                                                    <div class="flex gap-2">
+                                                        <Chip v-for="(label,index) in slotProps.data.labels" :key="index" :label="label" style="height: 1.5rem;" class="m-1" />
+                                                    </div>
+                                                </template>
+                                            </Column>
                                             <Column sortable field="order.submitted_at" header="Submitted At"></Column>
                                             <Column sortable field="order.cost" header="Cost">
                                                 <template #body="slotProps">
@@ -104,7 +111,7 @@ import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import SalesLogTableItems from '@/components/SalesLogTableItems.vue'
 import { $dt } from '@primevue/themes';
-import {Badge} from 'primevue';
+import {Badge, Chip} from 'primevue';
 
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,PointElement,LineElement,ArcElement)
@@ -277,7 +284,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
     let page_number = Math.floor(first/rows) + 1
 
 
-    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/sales?page[number]=${page_number}&page[size]=${rows}&tenant_id=1`, {
+    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/sales?page[number]=${page_number}&page[size]=${rows}`, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
         }

@@ -2,14 +2,12 @@ package models
 
 import (
 	"time"
-
-	pos_core_models "github.com/nutrixpos/pos/modules/core/models"
 )
 
 type Tenant struct {
-	ID       string                        `json:"id" bson:"id"`
-	TenantID string                        `bson:"tenant_id"`
-	Sales    []pos_core_models.SalesPerDay `bson:"sales"`
+	ID       string        `json:"id" bson:"id"`
+	TenantID string        `bson:"tenant_id"`
+	Sales    []SalesPerDay `bson:"sales"`
 }
 
 type TenantAPIKey struct {

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -24,9 +26,34 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			page_size = 50
 		}
 
-		tenant_id := r.URL.Query().Get("tenant_id")
+		token := r.Header.Get("X-Userinfo")
+		if token == "" {
+			http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+			return
+		}
+
+		decodedData, err := base64.StdEncoding.DecodeString(token)
+		if err != nil {
+			http.Error(w, "Failed to decode token", http.StatusBadRequest)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		// Create a map to hold the decoded JSON data
+		var claims map[string]interface{}
+
+		// Unmarshal the decoded data into the map
+		err = json.Unmarshal(decodedData, &claims)
+		if err != nil {
+			http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		tenant_id := claims["tenant_id"].(string)
 		if tenant_id == "" {
-			http.Error(w, "tenant_id query string is required", http.StatusBadRequest)
+			http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
+			logger.Error("ERROR: tenant_id claim is required")
 			return
 		}
 

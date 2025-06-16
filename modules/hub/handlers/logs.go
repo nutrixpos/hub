@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/mitchellh/mapstructure"
@@ -41,15 +40,12 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		// Unmarshal the decoded data into the map
 		err = json.Unmarshal(decodedData, &claims)
 		if err != nil {
-			log.Fatal("Error unmarshaling JSON data:", err)
+			http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
 		}
 
-		// fmt.Printf("Decoded claims:\n")
-		// for k, v := range claims {
-		// 	fmt.Printf("%s: %v\n", k, v)
-		// }
-
-		tenant_id := claims["urn:zitadel:iam:user:resourceowner:id"].(string)
+		tenant_id := claims["tenant_id"].(string)
 		if tenant_id == "" {
 			http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
 			logger.Error("ERROR: tenant_id claim is required")

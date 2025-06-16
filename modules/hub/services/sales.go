@@ -31,10 +31,10 @@ type SalesService struct {
 // GetSalesPerday returns a slice of models.SalesPerDay and the total count of records in the database.
 // It takes two parameters, first and rows, which determine the offset and limit of the query.
 // It returns an error if the query fails.
-func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id string) (salesPerDay []pos_core_models.SalesPerDay, totalRecords int, err error) {
+func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id string) (salesPerDay []models.SalesPerDay, totalRecords int, err error) {
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ss.Config.Databases[0].Host, ss.Config.Databases[0].Port))
 
-	salesPerDay = make([]pos_core_models.SalesPerDay, 0)
+	salesPerDay = make([]models.SalesPerDay, 0)
 
 	deadline := 5 * time.Second
 	if ss.Config.Env == "dev" {
