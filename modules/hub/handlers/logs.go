@@ -45,7 +45,13 @@ func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		tenant_id := claims["tenant_id"].(string)
+		tenant_id, ok := claims["tenant_id"].(string)
+		if !ok {
+			http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+			logger.Error("ERROR: tenant_id claim is required and must be a string")
+			return
+		}
+
 		if tenant_id == "" {
 			http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
 			logger.Error("ERROR: tenant_id claim is required")
