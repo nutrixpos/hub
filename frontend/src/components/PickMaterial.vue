@@ -56,7 +56,7 @@ const returnMaterial = (material: Material) => {
 
 const GetMaterials = () => {
     loading.value = true
-    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/materials`,{
+    axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/materials`,{
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
         }

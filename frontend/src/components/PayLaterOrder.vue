@@ -32,7 +32,7 @@ const toast = useToast();
 const emit = defineEmits(['order_paid'])
 
 const payUnpaidOrder = () => {
-    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/pay`,{
+    axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/pay`,{
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
         }

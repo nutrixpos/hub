@@ -106,7 +106,7 @@ const changedLanguage = () => {
 
 
 const saveSettings = () => {
-   axios.patch(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/settings`, 
+   axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/settings`, 
        {
            data: {
                inventory: {
@@ -140,7 +140,7 @@ const saveSettings = () => {
 }
 
 const getSettings = () => {
-   axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/settings`, {
+   axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/settings`, {
        headers: {
            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
        },
@@ -158,7 +158,7 @@ const getSettings = () => {
 }
 
 const applyLang = () => {
-   axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/sapi/languages/${selectedLang.value.code}`, {
+   axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/sapi/languages/${selectedLang.value.code}`, {
        headers: {
            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
        }
@@ -176,7 +176,7 @@ const applyLang = () => {
 
 
 const getAvailableLanguages = () => {
-   axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/languages`, {
+   axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/v1/api/languages`, {
        headers: {
            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
        }

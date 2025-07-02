@@ -284,7 +284,7 @@ const loadSales = (first=salesTableFirstIndex.value,rows=salesTableRowsPerPage.v
     let page_number = Math.floor(first/rows) + 1
 
 
-    axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/sales?page[number]=${page_number}&page[size]=${rows}`, {
+    axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/sales?page[number]=${page_number}&page[size]=${rows}`, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
         }

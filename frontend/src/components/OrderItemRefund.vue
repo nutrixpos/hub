@@ -141,7 +141,7 @@ const submitRefund = () => {
         material_refunds: material_refunds.value
     }
 
-    axios.post(`http://${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/items/${props.item.id}/refund?reason=${reason.value}`, 
+    axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}${import.meta.env.VITE_APP_BACKEND_VERSION}/api/orders/${props.order.id}/items/${props.item.id}/refund?reason=${reason.value}`, 
     {
         data : payload
     },

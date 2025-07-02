@@ -49,7 +49,7 @@ import InputText from 'primevue/inputtext'
 import OverlayPanel from 'primevue/overlaypanel';
 
 const backend_host = computed(() => {
-    return `http://${import.meta.env.VITE_APP_BACKEND_HOST}`;
+    return `${import.meta.env.VITE_APP_BACKEND_HOST}`;
 });
 
 const op = ref();

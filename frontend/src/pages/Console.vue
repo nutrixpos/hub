@@ -125,13 +125,13 @@ const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
 
 const loadLanguage = async () => {
 
-    await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/settings`, {
+    await axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/settings`, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
         },
     })
     .then(async (response)=>{
-        await axios.get(`http://${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/languages/${response.data.data.language.code}`, {
+        await axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/languages/${response.data.data.language.code}`, {
             headers: {
                 Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
             }
