@@ -13,7 +13,7 @@ import (
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
 )
 
-func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func GetKoptanSuggestions(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		page_number, err := strconv.Atoi(r.URL.Query().Get("page[number]"))
@@ -61,23 +61,18 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 				logger.Error("ERROR: tenant_id claim is required and must be a string")
 				return
 			}
-
-			if tenant_id == "" {
-				http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
-				logger.Error("ERROR: tenant_id claim is required")
-				return
-			}
 		}
 
-		salesService := services.SalesService{
+		koptan_svc := services.KoptanService{
 			Logger: logger,
 			Config: config,
 		}
 
-		sales, totalRecords, err := salesService.GetSalesPerday(page_number, page_size, tenant_id)
+		suggestions, totalRecords, err := koptan_svc.GetSuggestions(tenant_id, page_number, page_size)
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error(err.Error())
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
 			return
 		}
 
@@ -85,7 +80,7 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			Meta: core_handlers.JSONAPIMeta{
 				TotalRecords: totalRecords,
 			},
-			Data: sales,
+			Data: suggestions,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -93,5 +88,6 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 	}
 }

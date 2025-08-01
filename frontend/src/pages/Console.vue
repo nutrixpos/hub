@@ -116,6 +116,16 @@ const items = ref([
         ]
     },
     {
+        label: 'Koptan',
+        items: [
+            {
+                label: 'Insights',
+                icon: 'pi pi-lightbulb',
+                link: '/console/koptan',
+            },
+        ]
+    },
+    {
         separator: true
     }
 ]);

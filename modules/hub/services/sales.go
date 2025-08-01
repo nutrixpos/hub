@@ -55,35 +55,58 @@ func (ss *SalesService) GetSalesPerday(page_number int, page_size int, tenant_id
 	findOptions.SetSort(bson.M{"date": -1})
 
 	skip := (page_number - 1) * page_size
-	findOptions.SetSkip(int64(skip))
+	// findOptions.SetSkip(int64(skip))
 	findOptions.SetSort(bson.M{"date": 1})
-	findOptions.SetLimit(int64(page_size))
+	// findOptions.SetLimit(int64(page_size))
 
-	cursor, err := collection.Find(ctx, bson.M{
-		"tenant_id": tenant_id,
-	}, findOptions)
+	// Get the total number of entries
+	entryCountPipeline := []bson.M{
+		{"$match": bson.M{"tenant_id": tenant_id}},
+		{"$project": bson.M{"salesCount": bson.M{"$size": "$sales"}}},
+	}
+
+	salesCountCursor, err := collection.Aggregate(ctx, entryCountPipeline)
 	if err != nil {
-		ss.Logger.Error(err.Error())
+		return salesPerDay, totalRecords, err
+	}
+	defer salesCountCursor.Close(ctx)
+
+	totalRecords = 0
+
+	var salesCountResult []bson.M
+	if err = salesCountCursor.All(ctx, &salesCountResult); err != nil {
+		return salesPerDay, totalRecords, err
+	}
+	if len(salesCountResult) > 0 {
+		totalRecords = int(salesCountResult[0]["salesCount"].(int32))
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"tenant_id": tenant_id}},
+		{"$project": bson.M{
+			"sales": bson.M{
+				"$slice": []interface{}{"$sales", skip, page_size},
+			},
+		}},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
 		return salesPerDay, totalRecords, err
 	}
 	defer cursor.Close(ctx)
-	var tenant models.Tenant
 
-	for cursor.Next(context.Background()) {
-		if err := cursor.Decode(&tenant); err != nil {
-			return salesPerDay, totalRecords, err
-		}
-
-		for _, spd := range tenant.Sales {
-			if spd.Refunds == nil {
-				spd.Refunds = make([]pos_core_models.ItemRefund, 0)
-			}
-			salesPerDay = append(salesPerDay, spd)
-		}
-
+	// Get results
+	var results []models.Tenant
+	if err = cursor.All(ctx, &results); err != nil {
+		return salesPerDay, totalRecords, err
 	}
 
-	return salesPerDay, len(tenant.Sales), nil
+	if len(results) == 0 {
+		return salesPerDay, totalRecords, err
+	}
+
+	return results[0].Sales, totalRecords, err
 }
 
 func (ss *SalesService) InsertClientSalesOrders(tenant_id string, salesPerDayOrder []models.SalesPerDayOrder) (err error) {

@@ -43,7 +43,7 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/languages/{code}", pos_middlewares.AllowCors(handlers.GetLanguage(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.GetSettings(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.UpdateSettings(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
-
+	router.Handle("/v1/api/koptan/suggestions", pos_middlewares.AllowCors(handlers.GetKoptanSuggestions(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 }
 
 func (h *HubModule) EnsureSeeded() error {
