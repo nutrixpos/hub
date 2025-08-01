@@ -32,6 +32,10 @@ const secure_routes = [
                 path: 'sales',
                 component: () => import('@/pages/Sales.vue')
             },
+            {
+                path: 'koptan',
+                component: () => import('@/pages/Koptan.vue')
+            },
         ],
     },
     {
