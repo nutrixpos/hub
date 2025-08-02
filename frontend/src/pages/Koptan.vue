@@ -33,7 +33,7 @@ import {Badge, Chip} from 'primevue';
 const salesTableRowsPerPage = ref(7)
 const suggestionsTableTotalRecords = ref(0)
 const suggestions = ref([])
-const isSuggestionsTableLoading = ref(false)
+const isSuggestionsTableLoading = ref(true)
 const salesTableFirstIndex = ref(0)
 
 const {proxy} = getCurrentInstance()
@@ -50,6 +50,7 @@ const loadSuggestions = (first=salesTableFirstIndex.value,rows=salesTableRowsPer
 
 
     let page_number = Math.floor(first/rows) + 1
+    isSuggestionsTableLoading.value = true
 
 
     axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/koptan/suggestions?page[number]=${page_number}&page[size]=${rows}`, {
