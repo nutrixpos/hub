@@ -60,7 +60,7 @@ const loadSuggestions = (first=salesTableFirstIndex.value,rows=salesTableRowsPer
     })
     .then(response => {
         suggestions.value = response.data.data
-        suggestionsTableTotalRecords.value = response.data.meta.totalRecords
+        suggestionsTableTotalRecords.value = response.data.meta.total_records
         isSuggestionsTableLoading.value = false
     })
     
