@@ -38,6 +38,8 @@ func (h *HubModule) OnEnd() func() {
 func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 
 	router.Handle("/v1/api/logs", pos_middlewares.AllowCors(handlers.LogsPost(h.Config, h.Logger))).Methods("POST", "OPTIONS")
+	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger))).Methods("PUT", "OPTIONS")
+	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsGet(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/sales", pos_middlewares.AllowCors(handlers.GetSalesPerDay(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/languages", pos_middlewares.AllowCors(handlers.GetAvailableLanguages(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/languages/{code}", pos_middlewares.AllowCors(handlers.GetLanguage(h.Config, h.Logger))).Methods("GET", "OPTIONS")

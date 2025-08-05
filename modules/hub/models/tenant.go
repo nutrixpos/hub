@@ -5,9 +5,10 @@ import (
 )
 
 type Tenant struct {
-	ID       string        `json:"id" bson:"id"`
-	TenantID string        `bson:"tenant_id"`
-	Sales    []SalesPerDay `bson:"sales"`
+	ID             string          `json:"id" bson:"id"`
+	TenantID       string          `bson:"tenant_id"`
+	Sales          []SalesPerDay   `bson:"sales"`
+	InventoryItems []InventoryItem `bson:"inventory_items"`
 }
 
 type TenantAPIKey struct {
