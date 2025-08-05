@@ -33,6 +33,10 @@ const secure_routes = [
                 component: () => import('@/pages/Sales.vue')
             },
             {
+                path: 'inventory',
+                component: () => import('@/pages/Inventory.vue')
+            },
+            {
                 path: 'koptan',
                 component: () => import('@/pages/Koptan.vue')
             },
@@ -60,6 +64,10 @@ const insecure_routes = [
             {
                 path: 'sales',
                 component: () => import('@/pages/Sales.vue')
+            },
+            {
+                path: 'inventory',
+                component: () => import('@/pages/Inventory.vue')
             },
             {
                 path: 'koptan',

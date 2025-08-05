@@ -113,6 +113,11 @@ const items = ref([
                 icon: 'pi pi-chart-line',
                 link: '/console/sales',
             },
+            {
+                label: 'Inventory',
+                icon: 'pi pi-warehouse',
+                link: '/console/inventory',
+            },
         ]
     },
     {
