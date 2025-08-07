@@ -1,5 +1,5 @@
 <template>
-  <Toast />
+  <Toast group="br" position="top-center" />
   <RouterView />
 </template>
 

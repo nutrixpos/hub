@@ -7,12 +7,41 @@
                         <h3>{{$t('inventory')}}</h3>
                     </div>
                     <div class="col-12 flex flex-column gap-3 w-full">
-                        <h5>Suggestions</h5>
                         <div class="flex flex-column w-full">
-                            <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="inventoryTableTotalRecords" :loading="isInventoryTableLoading" paginatorPosition="both"  paginator :rows="inventoryTableRowsPerPage" :rowsPerPageOptions="[7, 14, 30, 90]" :value="inventory_items" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
-                                    <Column sortable field="content" :header="$t('content')"></Column>
-                                    <Column sortable field="type" :header="$t('type')"></Column>
+                            <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="inventoryTableTotalRecords" :loading="isInventoryTableLoading" :value="inventory_items" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
+                                    <Column sortable field="name" :header="$t('name')"></Column>
+                                    <Column sortable field="quantity" :header="$t('quantity')"></Column>
+                                    <Column field="labels" header="Labels">
+                                        <template #body="slotProps">
+                                            <div class="flex gap-2">
+                                                <Chip v-for="(label,index) in slotProps.data.labels" :key="index" :label="label" style="height: 1.5rem;" class="m-1" />
+                                            </div>
+                                        </template>
+                                    </Column>
+                                    <Column sortable field="unit" :header="$t('unit')"></Column>
+                                    <Column :header="$t('status')">
+                                        <template #body="slotProps">
+                                            <Tag :value="slotProps.data.quantity > slotProps.data.settings.alert_threshold ? 'INSTOCK' : 'LOWSTOCK'" :severity="slotProps.data.quantity > slotProps.data.settings.alert_threshold ? 'success' : 'danger'" />
+                                        </template>
+                                    </Column>
+                                    <Column :header="$t('actions')" style="width:30rem">
+                                        <template #body="slotProps">
+                                            <ButtonGroup>
+                                                <Button icon="pi pi-cog" severity="secondary" aria-label="Settings" @click="alert_threshold = slotProps.data.settings.alert_threshold; material_settings_dialog=true"  />
+                                            </ButtonGroup>
+                                        </template>
+                                    </Column>
                             </DataTable>
+                            <Dialog v-model:visible="material_settings_dialog" modal :header="`Settings for  ${material_settings?.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
+                                <div class="flex align-items-center">
+                                    <h4>stock_alert_treshold</h4>
+                                    <InputText type="number" class="ml-2" id="stock_alert_treshold" v-model.number="alert_threshold" aria-describedby="stock_alert_treshold" />
+                                </div>
+                                <template #footer>
+                                    <Button label="Cancel" @click="material_settings_dialog=false" severity="secondary" aria-label="Save"  />
+                                    <Button severity="primary" label="Save" aria-label="Save" @click="patchInventory"/>
+                                </template>
+                            </Dialog>
                         </div>
                     </div>
                 </div>
@@ -27,29 +56,26 @@ import Column from 'primevue/column'
 import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import { $dt } from '@primevue/themes';
-import {Badge, Chip} from 'primevue';
+import {Badge, Button, ButtonGroup, Chip, Tag, Dialog, InputText} from 'primevue';
 
 
-const inventoryTableRowsPerPage = ref(7)
-const inventoryTableTotalRecords = ref(0)
+import {useToast} from 'primevue/usetoast';
+const toast = useToast()
+
+
 const inventory_items = ref([])
 const isInventoryTableLoading = ref(true)
-const salesTableFirstIndex = ref(0)
+const material_settings_dialog = ref(false)
+const material_settings = ref({})
+
+const alert_threshold = ref(0)
 
 const {proxy} = getCurrentInstance()
 
 
-const updatSalesTableRowsPerPage = (event) => {
-
-    const { first, rows } = event;
-    loadInventory(first,rows)
-}
+const loadInventory = () => {
 
 
-const loadInventory = (first=salesTableFirstIndex.value,rows=inventoryTableRowsPerPage.value) => {
-
-
-    let page_number = Math.floor(first/rows) + 1
     isInventoryTableLoading.value = true
 
 
@@ -60,10 +86,42 @@ const loadInventory = (first=salesTableFirstIndex.value,rows=inventoryTableRowsP
     })
     .then(response => {
         inventory_items.value = response.data.data
-        inventoryTableTotalRecords.value = response.data.length
         isInventoryTableLoading.value = false
     })
     
+}
+
+
+const patchInventory = () => {
+        axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/inventories`, 
+        {
+           data: {
+               alert_threshold: alert_threshold.value
+           }
+        },
+        {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        toast.add({ 
+            severity: 'success', 
+            summary: 'Inventory Updated', 
+            detail: response.data.message || 'Inventory updated successfully!', 
+            group: 'br' 
+        });
+        material_settings_dialog.value = false
+        loadInventory()
+    })
+    .catch(error => {
+        toast.add({ 
+            severity: 'error', 
+            summary: 'Inventory Update Failed', 
+            detail: error.response.data.message || 'Failed to update inventory!', 
+            group: 'br' 
+        });
+    })
 }
 
 loadInventory()
