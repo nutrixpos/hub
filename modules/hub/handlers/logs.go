@@ -21,49 +21,58 @@ import (
 func LogsPost(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		token := r.Header.Get("X-Userinfo")
-		if token == "" {
-			http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
-			return
+		tenant_id := "1"
+		label := "dev"
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
+			}
+
+			decodedData, err := base64.StdEncoding.DecodeString(token)
+			if err != nil {
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			// Create a map to hold the decoded JSON data
+			var claims map[string]interface{}
+
+			// Unmarshal the decoded data into the map
+			err = json.Unmarshal(decodedData, &claims)
+			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var ok bool
+
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+
+			if tenant_id == "" {
+				http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required")
+				return
+			}
+
+			label = claims["name"].(string)
+			if label == "" {
+				http.Error(w, "name claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: name claim is required")
+				return
+			}
 		}
 
-		decodedData, err := base64.StdEncoding.DecodeString(token)
-		if err != nil {
-			http.Error(w, "Failed to decode token", http.StatusBadRequest)
-			logger.Error(fmt.Sprintf("ERROR: %v", err))
-			return
-		}
-
-		// Create a map to hold the decoded JSON data
-		var claims map[string]interface{}
-
-		// Unmarshal the decoded data into the map
-		err = json.Unmarshal(decodedData, &claims)
-		if err != nil {
-			http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
-			logger.Error(fmt.Sprintf("ERROR: %v", err))
-			return
-		}
-
-		tenant_id, ok := claims["tenant_id"].(string)
-		if !ok {
-			http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
-			logger.Error("ERROR: tenant_id claim is required and must be a string")
-			return
-		}
-
-		if tenant_id == "" {
-			http.Error(w, "tenant_id claim is required", http.StatusBadRequest)
-			logger.Error("ERROR: tenant_id claim is required")
-			return
-		}
-
-		label := claims["name"].(string)
-		if label == "" {
-			http.Error(w, "name claim is required", http.StatusBadRequest)
-			logger.Error("ERROR: name claim is required")
-			return
-		}
+		label = fmt.Sprintf("branch:%s", label)
 
 		request_body := struct {
 			Data []interface{} `json:"data"`

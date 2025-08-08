@@ -27,7 +27,7 @@
                                     <Column :header="$t('actions')" style="width:30rem">
                                         <template #body="slotProps">
                                             <ButtonGroup>
-                                                <Button icon="pi pi-cog" severity="secondary" aria-label="Settings" @click="alert_threshold = slotProps.data.settings.alert_threshold; material_settings_dialog=true"  />
+                                                <Button icon="pi pi-cog" severity="secondary" aria-label="Settings" @click="material_settings = slotProps.data;  alert_threshold = slotProps.data.settings.alert_threshold; material_settings_dialog=true"  />
                                             </ButtonGroup>
                                         </template>
                                     </Column>
@@ -95,9 +95,12 @@ const loadInventory = () => {
 const patchInventory = () => {
         axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/inventories`, 
         {
-           data: {
-               alert_threshold: alert_threshold.value
-           }
+            data: {
+                alert_threshold: alert_threshold.value
+            },
+            meta: {
+                    id: material_settings.value.id,
+            }
         },
         {
         headers: {

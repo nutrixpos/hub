@@ -68,7 +68,10 @@ func InventoryItemsPatch(config config.Config, logger logger.ILogger) http.Handl
 		}
 
 		request := struct {
-			Data map[string]interface{}
+			Data map[string]interface{} `json:"data"`
+			Meta struct {
+				Id string `json:"id"`
+			}
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&request)
@@ -113,16 +116,24 @@ func InventoryItemsPatch(config config.Config, logger logger.ILogger) http.Handl
 			return
 		}
 
+		existing_item_index, err := getInventoryItemById(request.Meta.Id, existing.InventoryItems)
+		new_items := existing.InventoryItems
+
 		for key, value := range request.Data {
 			switch key {
 			case "alert_threshold":
-				for i, item := range existing.InventoryItems {
-					if item.Labels[0] == label {
-						existing.InventoryItems[i].Settings.AlertThreshold = value.(float64)
-					}
+				if threshold, ok := value.(float64); ok {
+					new_items[existing_item_index].Settings.AlertThreshold = threshold
+				} else {
+					http.Error(w, "alert_threshold must be a number", http.StatusBadRequest)
+					logger.Error("ERROR: alert_threshold must be a number")
+					return
 				}
 			}
+
 		}
+
+		existing.InventoryItems = new_items
 
 		// Update the document
 		_, err = collection.ReplaceOne(ctx, filter, existing)
@@ -286,6 +297,35 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 			}
 		}
 
+		client, err := mongo.Connect(r.Context(), options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port)))
+		if err != nil {
+			http.Error(w, "Failed to connect to db", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+		defer client.Disconnect(r.Context())
+
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+
+		// check if document with tenant_id exists, otherwise create it with empty object value
+		filter_tenant := bson.D{{Key: "tenant_id", Value: tenant_id}}
+		var result bson.M
+		err = collection.FindOne(r.Context(), filter_tenant).Decode(&result)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				_, err = collection.InsertOne(r.Context(), bson.D{{Key: "tenant_id", Value: tenant_id}, {Key: "sales", Value: []bson.D{}}})
+				if err != nil {
+					http.Error(w, "Error creating new tenant", http.StatusBadRequest)
+					logger.Error(fmt.Sprintf("ERROR: %v", err))
+					return
+				}
+			} else {
+				http.Error(w, "Error searching for tenant in db", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+		}
+
 		request_body := struct {
 			Data []InventoryItemsDTO `json:"data"`
 		}{}
@@ -304,16 +344,6 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 		items := make([]models.InventoryItem, 0, len(request_body.Data))
 
 		label = fmt.Sprintf("branch:%s", label)
-
-		client, err := mongo.Connect(r.Context(), options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port)))
-		if err != nil {
-			http.Error(w, "Failed to connect to db", http.StatusInternalServerError)
-			logger.Error(fmt.Sprintf("ERROR: %v", err))
-			return
-		}
-		defer client.Disconnect(r.Context())
-
-		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
 
 		filter := bson.D{{Key: "tenant_id", Value: tenant_id}}
 
@@ -338,14 +368,14 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 
 		for _, item := range request_body.Data {
 
-			existing_item, err := getInventoryItemById(item.ID, existingInventoryItems.InventoryItems)
+			existing_item_index, err := getInventoryItemById(item.ID, existingInventoryItems.InventoryItems)
 			settings := models.InventoryItemSettings{
 				AlertThreshold: 0,
 				AlertEnabled:   false,
 			}
 
 			if err == nil {
-				settings = existing_item.Settings
+				settings = existingInventoryItems.InventoryItems[existing_item_index].Settings
 			}
 
 			items = append(items, models.InventoryItem{
@@ -385,11 +415,11 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 	}
 }
 
-func getInventoryItemById(id string, items []models.InventoryItem) (models.InventoryItem, error) {
-	for _, item := range items {
+func getInventoryItemById(id string, items []models.InventoryItem) (index int, err error) {
+	for index, item := range items {
 		if item.ID == id {
-			return item, nil
+			return index, nil
 		}
 	}
-	return models.InventoryItem{}, fmt.Errorf("inventory item with ID %s not found", id)
+	return 0, fmt.Errorf("inventory item with ID %s not found", id)
 }
