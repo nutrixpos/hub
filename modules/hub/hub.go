@@ -2,10 +2,10 @@ package hub
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/handlers"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/hub/modules/hub/services"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	pos_middlewares "github.com/nutrixpos/pos/modules/core/middlewares"
 )
@@ -36,7 +36,6 @@ func (h *HubModule) OnEnd() func() {
 }
 
 func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
-
 	router.Handle("/v1/api/logs", pos_middlewares.AllowCors(handlers.LogsPost(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger))).Methods("PUT", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsGet(h.Config, h.Logger))).Methods("GET", "OPTIONS")
@@ -47,6 +46,8 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.GetSettings(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.UpdateSettings(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
 	router.Handle("/v1/api/koptan/suggestions", pos_middlewares.AllowCors(handlers.GetKoptanSuggestions(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/subscriptions", pos_middlewares.AllowCors(handlers.SubcriptionGET(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/subscriptions/request", pos_middlewares.AllowCors(handlers.SubcriptionRequest(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 }
 
 func (h *HubModule) EnsureSeeded() error {

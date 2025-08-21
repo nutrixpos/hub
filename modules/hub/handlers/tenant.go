@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/hub/modules/hub/services"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 )
 

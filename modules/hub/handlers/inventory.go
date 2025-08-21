@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/models"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
 	"go.mongodb.org/mongo-driver/bson"

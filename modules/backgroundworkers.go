@@ -10,7 +10,7 @@ package modules
 import (
 	"time"
 
-	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 )
 

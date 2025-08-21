@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/models"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 )
 

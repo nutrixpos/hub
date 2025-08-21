@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules"
 	"github.com/nutrixpos/hub/modules/hub"
 	hub_services "github.com/nutrixpos/hub/modules/hub/services"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 )
 

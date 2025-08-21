@@ -26,16 +26,25 @@
                                 </router-link>
                             </template>
                             <template #end>
-                                <button v-ripple class="flex align-items-end relative overflow-hidden w-full border-0 bg-transparent flex items-start p-2 pl-4 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-none cursor-pointer transition-colors duration-200">
-                                    <Avatar icon="pi pi-user" class="mr-2" shape="circle" />
-                                    <span class="inline-flex flex-col items-start">
-                                        <span class="font-bold">{{ user?.name }}</span>
-                                        <span class="text-sm">
-                                            <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                                <Skeleton v-if="is_loading_subscription" height="2rem" class="mx-3 my-3 w-15rem"></Skeleton>
+                                <router-link v-if="!is_loading_subscription" class="flex items-center mx-2 py-3 px-2 gap-2" to="/console/subscription">
+                                    <span class="pi pi-receipt" />
+                                    <span>Subscription</span>
+                                    <Badge class="ml-auto" value="free"  style="background-color: silver;color:black"/>
+                                </router-link>
+                                <Divider />
+                                <div class="flex gap-2 p-2 justify-content-between align-items-center">
+                                    <div class="flex gap-2 align-items-center cursor-pointer">
+                                        <Avatar icon="pi pi-user" shape="circle" />
+                                        <span class="inline-flex items-start">
+                                            <span>{{ user?.name || "Anonynmous" }}</span>
+                                            <span class="text-sm">
+                                                <Chip v-for="(role,index) in roles" :key="index" :label="role" style="height: 1.5rem;" class="m-1" />
+                                            </span>
                                         </span>
-                                    </span>
-                                </button>
-                                <Button class="w-full text-start" icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" :label=" $t('signout')" @click="proxy.$zitadel?.oidcAuth.signOut()" />                            
+                                    </div>
+                                    <Button icon="pi pi-sign-out" severity="secondary" text aria-label="Signout" @click="proxy.$zitadel?.oidcAuth.signOut()" />                            
+                                </div>
                             </template>
                         </Menu>
 
@@ -63,7 +72,7 @@ import { useI18n } from 'vue-i18n'
 import { globalStore } from '@/stores';
 import axios from "axios";
 import ProgressSpinner from "primevue/progressspinner";
-import {Menu,Avatar} from 'primevue';
+import {Menu,Avatar, Badge, Skeleton,Divider} from 'primevue';
 
 
 const { proxy } = getCurrentInstance();
@@ -135,8 +144,33 @@ const items = ref([
     }
 ]);
 
-  const loading = ref(true)
+const loading = ref(true)
 const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
+
+const subscription_data = ref();
+const is_loading_subscription = ref(true)
+import {useToast} from 'primevue/usetoast';
+const toast = useToast()
+
+const loadSubscriptionData = () => {
+    axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/subscriptions`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        subscription_data.value = response.data.data;
+        is_loading_subscription.value = false;
+    })
+    .catch((error) => {
+        toast.add({ 
+            severity: 'error', 
+            summary: 'Error', 
+            detail: error.response.data.message || 'Failed to load subscription data!', 
+            group: 'br' 
+        });
+    });
+}
 
 const loadLanguage = async () => {
 
@@ -171,6 +205,7 @@ const loadLanguage = async () => {
 
 
 loadLanguage()
+loadSubscriptionData()
 </script>
 
 <style>

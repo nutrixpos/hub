@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/nutrixpos/pos/common/config"
+	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules/hub/models"
+	"github.com/nutrixpos/hub/modules/hub/services"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
-	"github.com/nutrixpos/pos/modules/core/models"
-	"github.com/nutrixpos/pos/modules/core/services"
 )
 
 // UpdateSettings is a post request handler that updates the settings in the database

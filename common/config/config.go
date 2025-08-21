@@ -1,0 +1,68 @@
+package config
+
+import (
+	"github.com/nutrixpos/pos/common/logger"
+)
+
+// ConfigFactory creates a Config object based on the provided type and path
+func ConfigFactory(t string, path string, logger logger.ILogger) Config {
+	switch t {
+	case "viper":
+		viper_config := NewViperConfig(logger)
+		viper_config.ReadFile(path)
+
+		config, err := viper_config.GetConfig()
+		if err != nil {
+			logger.Error("can't read config")
+		}
+
+		return config
+	}
+
+	return Config{}
+}
+
+// IConfig interface defines methods for config management
+type IConfig interface {
+	ReadFile(path string)
+	BindEnv() error
+	GetConfig() (config Config)
+}
+
+// ZitadelConfig holds the configuration for Zitadel
+type ZitadelConfig struct {
+	Domain  string `mapstructure:"domain"`
+	Port    int    `mapstructure:"port"`
+	KeyPath string `mapstructure:"key_path"`
+	Enabled bool   `mapstructure:"enabled"`
+}
+
+// Config represents the overall configuration structure
+type Config struct {
+	Databases   []Database    `mapstructure:"databases"`
+	Zitadel     ZitadelConfig `mapstructure:"zitadel"`
+	Env         string        `mapstructure:"env"`
+	TimeZone    string        `mapstructure:"timezone"`
+	UploadsPath string        `mapstructure:"uploads_path"`
+	Payment     PaymentConfig `mapstructure:"payment"`
+}
+
+// PaymentConfig holds the configuration for payment
+type PaymentConfig struct {
+	ApiKey         string `mapstructure:"api_key"`
+	SubscribingURL string `mapstructure:"subscribing_url"`
+	PublicKey      string `mapstructure:"public_key"` // Public key for payment gateway
+	SecretKey      string `mapstructure:"secret_key"` // Secret key for payment gateway
+}
+
+// Database holds the configuration for database connections
+type Database struct {
+	Host     string            `mapstructure:"host"`
+	Port     int               `mapstructure:"port"`
+	Username string            `mapstructure:"username"`
+	Password string            `mapstructure:"password"`
+	Type     string            `mapstructure:"type"`
+	Name     string            `mapstructure:"name"`
+	Database string            `mapstructure:"database"`
+	Tables   map[string]string `mapstructure:"tables"`
+}

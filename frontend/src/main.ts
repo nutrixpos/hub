@@ -40,6 +40,10 @@ const secure_routes = [
                 path: 'koptan',
                 component: () => import('@/pages/Koptan.vue')
             },
+            {
+                path: 'subscription',
+                component: () => import('@/pages/Subscription.vue')
+            },
         ],
     },
     {
@@ -72,6 +76,10 @@ const insecure_routes = [
             {
                 path: 'koptan',
                 component: () => import('@/pages/Koptan.vue')
+            },
+            {
+                path: 'subscription',
+                component: () => import('@/pages/Subscription.vue')
             },
         ],
     },

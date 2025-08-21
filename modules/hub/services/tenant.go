@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/models"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

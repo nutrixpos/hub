@@ -9,9 +9,9 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/nutrixpos/hub/common"
+	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/hub/modules/hub/services"
-	"github.com/nutrixpos/pos/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 	core_models "github.com/nutrixpos/pos/modules/core/models"
 	"go.mongodb.org/mongo-driver/mongo"

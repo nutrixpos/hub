@@ -8,5 +8,11 @@ databases:
     password: ""
     tables:
       sales: client_sales
+
+payment:
+  api_key: test
+  subscribing_url: test
+  public_key: test
+  secret_key: test
     
 env: dev
