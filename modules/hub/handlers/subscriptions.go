@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/nutrixpos/hub/common/config"
@@ -19,6 +20,36 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type PaymobTime time.Time
+
+func (t PaymobTime) MarshalJSON() ([]byte, error) {
+	//do your serializing here
+	stamp := fmt.Sprintf("\"%s\"", time.Time(t).Format("2025-08-22T14:08:47.177486"))
+	return []byte(stamp), nil
+}
+
+func (t *PaymobTime) UnmarshalJSON(b []byte) error {
+	s := string(b)
+
+	// Handle null values
+	if s == "null" {
+		return nil
+	}
+
+	// Remove quotes from JSON string
+	s = strings.Trim(s, `"`)
+
+	// Parse the timestamp using the correct format
+	parsedTime, err := time.Parse("2006-01-02T15:04:05.999999", s)
+	if err != nil {
+		// Try alternative formats if needed
+		return fmt.Errorf("failed to parse time %s: %v", s, err)
+	}
+
+	*t = PaymobTime(parsedTime)
+	return nil
+}
+
 type SubscribeResponse struct {
 	PaymentKeys      []PaymentKey    `json:"payment_keys"`
 	IntentionOrderID int             `json:"intention_order_id"`
@@ -30,7 +61,7 @@ type SubscribeResponse struct {
 	Extras           Extras          `json:"extras"`
 	Confirmed        bool            `json:"confirmed"`
 	Status           string          `json:"status"`
-	Created          time.Time       `json:"created"`
+	Created          PaymobTime      `json:"created"`
 	CardDetail       CardDetail      `json:"card_detail"`
 	CardTokens       []CardToken     `json:"card_tokens"`
 	Object           string          `json:"object"`
@@ -146,7 +177,6 @@ func SubcriptionSubscribe(config config.Config, logger logger.ILogger) http.Hand
 func SubcriptionRequest(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenant_id := "1"
-		client_name := "Dev"
 		client_email := "dev@dev.dev"
 		given_name := "Dev"
 		family_name := "Dev"
@@ -261,11 +291,11 @@ func SubcriptionRequest(config config.Config, logger logger.ILogger) http.Handle
 						State       string `json:"state"`
 					}{
 						Apartment:   "",
-						FirstName:   client_name,
-						LastName:    "",
+						FirstName:   given_name,
+						LastName:    family_name,
 						Street:      "",
 						Building:    "",
-						PhoneNumber: "",
+						PhoneNumber: phone,
 						Country:     "",
 						Email:       client_email,
 						Floor:       "",
@@ -277,8 +307,8 @@ func SubcriptionRequest(config config.Config, logger logger.ILogger) http.Handle
 						Email     string                 `json:"email"`
 						Extras    map[string]interface{} `json:"extras"`
 					}{
-						FirstName: client_name,
-						LastName:  "",
+						FirstName: given_name,
+						LastName:  family_name,
 						Email:     client_email,
 						Extras: map[string]interface{}{
 							"tenant_id": tenant_id,
@@ -313,7 +343,7 @@ func SubcriptionRequest(config config.Config, logger logger.ILogger) http.Handle
 
 				defer resp.Body.Close()
 
-				if resp.StatusCode != http.StatusOK {
+				if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 					var errorResponse map[string]interface{}
 					err = json.NewDecoder(resp.Body).Decode(&errorResponse)
 					if err != nil {

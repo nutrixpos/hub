@@ -36,7 +36,7 @@
                                     </div>
                                 </template>
                                 <template #footer>
-                                    <Button label="Subscribe" severity="primary" class="w-full" />
+                                    <Button label="Subscribe" severity="primary" class="w-full" @click="requestSusbcription('standard')" />
                                 </template>
                             </Card>
                             <Card class="w-20rem">
@@ -65,7 +65,36 @@
     </div>
 </template>
 
-<script setup>
-import {ref} from "vue";
+<script setup lang="ts">
+import {getCurrentInstance,ref} from 'vue'
 import {Card,Badge, Button} from 'primevue';
+import axios from 'axios';
+import { useToast } from "primevue/usetoast";
+
+const toast = useToast();
+const { proxy } = getCurrentInstance();
+
+const requestSusbcription = (plan: string) => {
+    console.log(`test: ${import.meta.env.VITE_APP_BACKEND_HOST}/v1/api/subscriptions/request`)
+    axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/v1/api/subscriptions/request`, 
+       {
+           data: {
+               plan: plan,
+           }
+       },
+       {
+           headers: {
+               Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+           }
+       }
+   )
+   .then((response)=>{
+       console.log(response.data);
+   })
+   .catch((err) => {
+        toast.add({ severity: 'error', summary: 'Failed', detail: err, life: 3000,group:'br' });  
+       console.log(err)
+   });
+}
+
 </script>
