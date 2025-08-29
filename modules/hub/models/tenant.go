@@ -5,11 +5,11 @@ import (
 )
 
 type TenantSubscription struct {
-	ID              string    `json:"id" bson:"id"`
-	SubcriptionPlan string    `bson:"subscription_plan"`
-	StartDate       time.Time `bson:"start_date"`
-	EndDate         time.Time `bson:"end_date"`
-	Status          string    `bson:"status"`
+	ID               string    `json:"id" bson:"id"`
+	SubscriptionPlan string    `json:"subscription_plan" bson:"subscription_plan"`
+	StartDate        time.Time `json:"start_date" bson:"start_date"`
+	EndDate          time.Time `json:"end_date" bson:"end_date"`
+	Status           string    `json:"status" bson:"status"`
 }
 
 type Tenant struct {

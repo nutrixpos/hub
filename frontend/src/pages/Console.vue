@@ -30,7 +30,7 @@
                                 <router-link v-if="!is_loading_subscription" class="flex items-center mx-2 py-3 px-2 gap-2" to="/console/subscription">
                                     <span class="pi pi-receipt" />
                                     <span>Subscription</span>
-                                    <Badge class="ml-auto" value="free"  style="background-color: silver;color:black"/>
+                                    <Badge class="ml-auto" :value="store.subscription.subscription_plan"  :style="`background-color: ${store.subscription.subscription_plan == 'free' ?'silver' : 'var(--p-primary-color)'};color:${store.subscription.subscription_plan == 'free' ?'black' : 'var(--p-button-primary-color)'}`"/>
                                 </router-link>
                                 <Divider />
                                 <div class="flex gap-2 p-2 justify-content-between align-items-center">
@@ -147,7 +147,6 @@ const items = ref([
 const loading = ref(true)
 const { locale,setLocaleMessage } = useI18n({ useScope: 'global' })
 
-const subscription_data = ref();
 const is_loading_subscription = ref(true)
 import {useToast} from 'primevue/usetoast';
 const toast = useToast()
@@ -159,8 +158,8 @@ const loadSubscriptionData = () => {
         }
     })
     .then(response => {
-        subscription_data.value = response.data.data;
         is_loading_subscription.value = false;
+        store.setSubscription(response.data.data)
     })
     .catch((error) => {
         toast.add({ 

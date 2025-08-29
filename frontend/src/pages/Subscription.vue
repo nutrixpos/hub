@@ -10,7 +10,7 @@
                         <div class="flex flex-column w-full">
                             <Card>
                                 <template #title>
-                                    <Badge class="ml-auto" value="Free" size="xlarge" style="background-color: silver;color:black" />
+                                    <Badge class="ml-auto" :value="`${store.subscription.subscription_plan.charAt(0).toUpperCase()}${store.subscription.subscription_plan.slice(1)}`" size="xlarge" :style="`background-color: ${store.subscription.subscription == 'free' ?'silver' : 'var(--p-primary-color)'};color:${store.subscription.subscription == 'free' ?'black' : 'var(--p-button-primary-color)'}`" />
                                 </template>
                                 <template #content>
                                     <p class="m-0">
@@ -22,7 +22,7 @@
                         </div>
                         <h1 style="font-size:2rem;" class="mt-4 ">Other options</h1>
                         <div class="flex gap-3">
-                            <Card class="w-20rem">
+                            <Card class="w-20rem" v-if="store.subscription.subscription_plan != 'standard'">
                                 <template #title>
                                     <Badge class="ml-auto" value="Standard" size="xlarge" />
                                 </template>
@@ -39,7 +39,7 @@
                                     <Button label="Subscribe" severity="primary" class="w-full" @click="requestSusbcription('standard')" />
                                 </template>
                             </Card>
-                            <Card class="w-20rem">
+                            <Card class="w-20rem" v-if="store.subscription.subscription_plan != 'gold'">
                                 <template #title>
                                     <Badge class="ml-auto" value="GOLD" size="xlarge" style="background-color: #E1C05C;color:black" />
                                 </template>
@@ -54,7 +54,7 @@
                                     </div>
                                 </template>
                                 <template #footer>
-                                    <Button label="Subscribe" severity="primary" class="w-full" style="background-color:#E1C05C;border-color:gold;color:black" />
+                                    <Button label="Subscribe" severity="primary" class="w-full" style="background-color:#E1C05C;border-color:gold;color:black" @click="requestSusbcription('gold')" />
                                 </template>
                             </Card>
                         </div>
@@ -62,20 +62,41 @@
                 </div>
             </div>
         </div>
+        <Dialog v-model:visible="loading_subscription_request" pt:root:class="!border-0 !bg-transparent" pt:mask:class="backdrop-blur-sm">
+            <template #container>
+                <Card>
+                    <template #content>
+                        <div class="flex flex-column gap-3 justify-content-center align-items-center p-3">
+                            <p class="m-0">
+                                {{ subscrition_request_message }}
+                            </p>
+                            <ProgressSpinner style="width: 35px; height: 35px;" strokeWidth="4" fill="transparent" animationDuration=".5s" aria-label="Custom ProgressSpinner" />
+                        </div>
+                    </template>
+                </Card>
+            </template>
+        </Dialog>
     </div>
 </template>
 
 <script setup lang="ts">
 import {getCurrentInstance,ref} from 'vue'
-import {Card,Badge, Button} from 'primevue';
+import {Card,Badge, Button,Dialog, ProgressSpinner} from 'primevue';
 import axios from 'axios';
 import { useToast } from "primevue/usetoast";
+import { globalStore } from '@/stores';
 
+
+const store = globalStore()
+
+
+const loading_subscription_request = ref(false);
 const toast = useToast();
 const { proxy } = getCurrentInstance();
+const subscrition_request_message = ref("Requesting subscription...");
 
 const requestSusbcription = (plan: string) => {
-    console.log(`test: ${import.meta.env.VITE_APP_BACKEND_HOST}/v1/api/subscriptions/request`)
+    loading_subscription_request.value = true;
     axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/v1/api/subscriptions/request`, 
        {
            data: {
@@ -89,11 +110,16 @@ const requestSusbcription = (plan: string) => {
        }
    )
    .then((response)=>{
-       console.log(response.data);
+       console.log("response: "+response.data);
+       subscrition_request_message.value = "Subscription request successful. Redirecting to the payment gateway...";
+       setTimeout(() => {
+           window.location.href = response.data.data.payment_url;
+       }, 1000);       
    })
    .catch((err) => {
-        toast.add({ severity: 'error', summary: 'Failed', detail: err, life: 3000,group:'br' });  
+       toast.add({ severity: 'error', summary: 'Failed', detail: err, life: 3000,group:'br' });  
        console.log(err)
+       loading_subscription_request.value = false;
    });
 }
 
