@@ -30,7 +30,7 @@
                                 <router-link v-if="!is_loading_subscription" class="flex items-center mx-2 py-3 px-2 gap-2" to="/console/subscription">
                                     <span class="pi pi-receipt" />
                                     <span>Subscription</span>
-                                    <Badge class="ml-auto" :value="store.subscription.subscription_plan"  :style="`background-color: ${store.subscription.subscription_plan == 'free' ?'silver' : 'var(--p-primary-color)'};color:${store.subscription.subscription_plan == 'free' ?'black' : 'var(--p-button-primary-color)'}`"/>
+                                    <Badge class="ml-auto" :value="store.subscription.subscription_plan.toUpperCase()"  :style="`background-color: ${store.subscription.subscription_plan.toUpperCase() == 'FREE' ?'silver' : '#E1C05C'};color:black`"/>
                                 </router-link>
                                 <Divider />
                                 <div class="flex gap-2 p-2 justify-content-between align-items-center">

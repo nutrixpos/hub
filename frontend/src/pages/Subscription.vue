@@ -8,38 +8,33 @@
                     </div>
                     <div class="col-12 flex flex-column gap-3 w-full">
                         <div class="flex flex-column w-full">
-                            <Card>
+                            <Card v-if="store.subscription.subscription_plan == 'gold'" class="w-20rem">
                                 <template #title>
-                                    <Badge class="ml-auto" :value="`${store.subscription.subscription_plan.charAt(0).toUpperCase()}${store.subscription.subscription_plan.slice(1)}`" size="xlarge" :style="`background-color: ${store.subscription.subscription == 'free' ?'silver' : 'var(--p-primary-color)'};color:${store.subscription.subscription == 'free' ?'black' : 'var(--p-button-primary-color)'}`" />
+                                    <div class="flex gap-1 flex-column justify-content-start align-items-start">
+                                        <Badge size="xlarge" :value="store.subscription.subscription_plan.toUpperCase()"  :style="`background-color: ${store.subscription.subscription_plan.toUpperCase() == 'FREE' ?'silver' : '#E1C05C'};color:black`"/>
+                                        <p style="font-size:0.9rem;">Renewal date: <span>{{ new Date(store.subscription.end_date).toISOString().split('T')[0] }}</span></p>
+                                    </div>
                                 </template>
                                 <template #content>
-                                    <p class="m-0">
-                                        Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore sed consequuntur error repudiandae numquam deserunt quisquam repellat libero asperiores earum nam nobis, culpa ratione quam perferendis esse, cupiditate neque
-                                        quas!
-                                    </p>
+                                    <ul class="pl-0 ml-0" style="list-style-type: none;">
+                                        <div class="flex">
+                                            ✅&nbsp; <span>Unlimited orders</span>
+                                        </div>
+                                        <div class="flex">
+                                            ✅&nbsp; <span>Unlimited orders</span>
+                                        </div>
+                                    </ul>                                    
+                                </template>
+                                <template #footer>
+                                    <div class="flex justify-content-end">
+                                        <Button size="small" class="mt-4" text label="Request cancellation" />
+                                    </div>
                                 </template>
                             </Card>
                         </div>
-                        <h1 style="font-size:2rem;" class="mt-4 ">Other options</h1>
-                        <div class="flex gap-3">
-                            <Card class="w-20rem" v-if="store.subscription.subscription_plan != 'standard'">
-                                <template #title>
-                                    <Badge class="ml-auto" value="Standard" size="xlarge" />
-                                </template>
-                                <template #content>
-                                    <div class="flex-column flex gap-3 mt-3">
-                                        <p class="text-center" style="font-size:1.5rem">$30/month</p>
-                                        <p class="m-0 p-2">
-                                            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore sed consequuntur error repudiandae numquam deserunt quisquam repellat libero asperiores earum nam nobis, culpa ratione quam perferendis esse, cupiditate neque
-                                            quas!
-                                        </p>
-                                    </div>
-                                </template>
-                                <template #footer>
-                                    <Button label="Subscribe" severity="primary" class="w-full" @click="requestSusbcription('standard')" />
-                                </template>
-                            </Card>
-                            <Card class="w-20rem" v-if="store.subscription.subscription_plan != 'gold'">
+                        <div class="flex gap-3" v-if="store.subscription.subscription_plan != 'gold'">
+                            <h1 style="font-size:2rem;" class="mt-4 ">Upgrade subscription</h1>
+                            <Card class="w-20rem">
                                 <template #title>
                                     <Badge class="ml-auto" value="GOLD" size="xlarge" style="background-color: #E1C05C;color:black" />
                                 </template>
