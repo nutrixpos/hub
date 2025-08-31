@@ -768,6 +768,77 @@ type PaymobTransactionInquiryResponse struct {
 
 //////////// !Paymob Transaction inquiry
 
+func SubscriptionRequestCancellation(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant_id := "1"
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
+			}
+
+			decodedData, err := base64.StdEncoding.DecodeString(token)
+			if err != nil {
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var claims map[string]interface{}
+			err = json.Unmarshal(decodedData, &claims)
+			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var ok bool
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok || tenant_id == "" {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+		}
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
+		deadline := 5 * time.Second
+		if config.Env == "dev" {
+			deadline = 1000 * time.Second
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), deadline)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, clientOptions)
+
+		// connected to db
+
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+		filter := bson.M{"tenant_id": tenant_id}
+		var tenant models.Tenant
+		err = collection.FindOne(ctx, filter).Decode(&tenant)
+		if err != nil {
+			http.Error(w, "Failed to find tenant", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		subscripion := tenant.Subscription
+		subscripion.Status = "pending_cancellation"
+		tenant.Subscription = subscripion
+
+		_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"subscription": subscripion}})
+		if err != nil {
+			http.Error(w, "Failed to update tenant subscription", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+	}
+}
+
 func PaymobSubscribeCallbackPOST(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		request := PaymobSubscribePaymentCallback{}
@@ -931,6 +1002,7 @@ func PaymobSubscribeCallbackPOST(config config.Config, logger logger.ILogger) ht
 					tenant.Subscription.SubscriptionPlan = "gold"
 					tenant.Subscription.StartDate = starts_at
 					tenant.Subscription.EndDate = ends_at
+					tenant.Subscription.Status = "active"
 				}
 
 				_, err = collection.UpdateOne(ctx, filter, bson.M{

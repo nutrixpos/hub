@@ -9,6 +9,8 @@ import {  createWebHistory, createRouter } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import { definePreset } from '@primeuix/themes';
 import zitadelAuth from "@/services/zitadelAuth";
+import ConfirmationService from 'primevue/confirmationservice';
+
 
 
 
@@ -217,6 +219,7 @@ const insecure_routes = [
                 }
             })
             .use(ToastService)
+            .use(ConfirmationService)
             .use(i18n)
             .mount('#app')
       } else {
@@ -237,6 +240,7 @@ const insecure_routes = [
         }
     })
     .use(ToastService)
+    .use(ConfirmationService)
     .use(i18n)
     .mount('#app')
   }

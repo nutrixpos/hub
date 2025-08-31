@@ -49,6 +49,7 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/subscriptions", pos_middlewares.AllowCors(handlers.SubcriptionGET(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/request", pos_middlewares.AllowCors(handlers.SubcriptionRequest(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/payment_callback", pos_middlewares.AllowCors(handlers.PaymobSubscribeCallbackPOST(h.Config, h.Logger))).Methods("POST", "OPTIONS")
+	router.Handle("/v1/api/subscriptions/request_cancellation", pos_middlewares.AllowCors(handlers.SubscriptionRequestCancellation(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 }
 
 func (h *HubModule) EnsureSeeded() error {
