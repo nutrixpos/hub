@@ -32,6 +32,9 @@
                                             ✅&nbsp; <span>Sales, cost, profit, refunds / day trend chart</span>
                                         </div>
                                         <div class="flex">
+                                            ❌&nbsp; <span>Display all orders per day</span>
+                                        </div>
+                                        <div class="flex">
                                             ❌&nbsp; <span>Per order cost and profit</span>
                                         </div>
                                         <div class="flex">
@@ -70,6 +73,9 @@
                                             </div>
                                             <div class="flex">
                                                 ✅&nbsp; <span>Sales, cost, profit, refunds / day trend chart</span>
+                                            </div>
+                                            <div class="flex">
+                                                ✅&nbsp; <span>Display all orders per day</span>
                                             </div>
                                             <div class="flex">
                                                 ✅&nbsp; <span>Per order cost and profit</span>
@@ -119,6 +125,9 @@
                                                 </div>
                                                 <div class="flex">
                                                     ✅&nbsp; <span>Sales, cost, profit, refunds / day trend chart</span>
+                                                </div>
+                                                <div class="flex">
+                                                    ✅&nbsp; <span>Display all orders per day</span>
                                                 </div>
                                                 <div class="flex">
                                                     ✅&nbsp; <span>Per order cost and profit</span>

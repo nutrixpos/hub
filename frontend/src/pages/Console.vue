@@ -130,7 +130,7 @@ const items = ref([
         ]
     },
     {
-        label: 'Koptan',
+        label: 'Koptan AI',
         items: [
             {
                 label: 'Insights',

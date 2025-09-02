@@ -4,11 +4,16 @@
             <div class="col-12 flex">
                 <div class="gird w-full">
                     <div class="col-12">
-                        <h3>{{$t('koptan')}}</h3>
+                        <h3 style="font-size:2rem">Koptan AI</h3>
                     </div>
                     <div class="col-12 flex flex-column gap-3 w-full">
                         <h5>Suggestions</h5>
-                        <div class="flex flex-column w-full">
+                        <div class="w-full text-center" v-if="store.subscription.subscription_plan == 'free'">
+                            <Button class="mt-2 w-20rem" style="background-color:#E1C05C;border-color:gold;color:black">
+                                <RouterLink to="/console/subscription">Upgrade to GOLD to unlock</RouterLink>
+                            </Button>
+                        </div>
+                        <div class="flex flex-column w-full" v-if="store.subscription.subscription_plan == 'gold'">
                             <DataTable @page="updatSalesTableRowsPerPage" :lazy="true" :totalRecords="suggestionsTableTotalRecords" :loading="isSuggestionsTableLoading" paginatorPosition="both"  paginator :rows="salesTableRowsPerPage" :rowsPerPageOptions="[7, 14, 30, 90]" :value="suggestions" stripedRows tableStyle="min-width: 50rem;max-height:50vh;" class="w-full pr-2">
                                     <Column sortable field="content" :header="$t('content')"></Column>
                                     <Column sortable field="type" :header="$t('type')"></Column>
@@ -27,8 +32,8 @@ import Column from 'primevue/column'
 import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import { $dt } from '@primevue/themes';
-import {Badge, Chip} from 'primevue';
-
+import {Badge, Chip, Button} from 'primevue';
+import { globalStore } from '../stores';
 
 const salesTableRowsPerPage = ref(7)
 const suggestionsTableTotalRecords = ref(0)
@@ -37,7 +42,7 @@ const isSuggestionsTableLoading = ref(true)
 const salesTableFirstIndex = ref(0)
 
 const {proxy} = getCurrentInstance()
-
+const store = globalStore()
 
 const updatSalesTableRowsPerPage = (event) => {
 

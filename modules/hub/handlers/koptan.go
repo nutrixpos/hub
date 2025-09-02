@@ -63,6 +63,23 @@ func GetKoptanSuggestions(config config.Config, logger logger.ILogger) http.Hand
 			}
 		}
 
+		tenant_svc := services.TenantService{
+			Config: config,
+			Logger: logger,
+		}
+
+		tenant, err := tenant_svc.AddTenantById(tenant_id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		if tenant.Subscription.SubscriptionPlan == "free" {
+			http.Error(w, "Upgrade to GOLD to unlock this feature", http.StatusForbidden)
+			return
+		}
+
 		koptan_svc := services.KoptanService{
 			Logger: logger,
 			Config: config,

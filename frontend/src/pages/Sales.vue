@@ -4,7 +4,7 @@
             <div class="col-12 flex">
                 <div class="gird w-full">
                     <div class="col-12">
-                        <h3>{{$t('sales')}}</h3>
+                        <h3 style="font-size:2rem">{{$t('sales')}}</h3>
                     </div>
                     <div class="col-12 flex justify-content-center align-items-center w-full">
                         <div class="flex flex-column w-full">
