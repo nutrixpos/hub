@@ -6,6 +6,7 @@ type SalesPerDay struct {
 	Id           string                   `json:"id" bson:"id,omitempty" mapstructure:"id"`
 	Date         string                   `json:"date" bson:"date" mapstructure:"date"`
 	Orders       []SalesPerDayOrder       `json:"orders" bson:"orders" mapstructure:"orders"`
+	OrderCount   int                      `json:"order_count" bson:"order_count" mapstructure:"order_count"`
 	Refunds      []core_models.ItemRefund `json:"refunds" bson:"refunds" mapstructure:"refunds"`
 	Costs        float64                  `json:"costs" bson:"costs" mapstructure:"costs"`
 	TotalSales   float64                  `json:"total_sales" bson:"total_sales" mapstructure:"total_sales"`

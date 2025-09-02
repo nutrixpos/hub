@@ -74,7 +74,17 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			Config: config,
 		}
 
-		sales, totalRecords, err := salesService.GetSalesPerday(page_number, page_size, tenant_id)
+		tenant_svc := services.TenantService{
+			Logger: logger,
+			Config: config,
+		}
+		tenant, err := tenant_svc.AddTenantById(tenant_id)
+		number_displayed_orders := -1
+		if tenant.Subscription.SubscriptionPlan == "free" {
+			number_displayed_orders = 1
+		}
+
+		sales, totalRecords, err := salesService.GetSalesPerday(page_number, page_size, tenant_id, number_displayed_orders)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error(err.Error())

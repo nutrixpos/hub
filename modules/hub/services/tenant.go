@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -22,7 +20,7 @@ type TenantService struct {
 }
 
 // GetSettings returns the settings from the database
-func (ts *TenantService) AddAPIKey(tenant_id string, title string, expirationDate time.Time) (err error) {
+func (ts *TenantService) AddTenantById(tenant_id string) (tenant models.Tenant, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ts.Config.Databases[0].Host, ts.Config.Databases[0].Port))
 
@@ -47,36 +45,8 @@ func (ts *TenantService) AddAPIKey(tenant_id string, title string, expirationDat
 		return
 	}
 
-	// Connected successfully
-
-	api_key, err := GenerateAPIKey(32)
-	if err != nil {
-		return err
-	}
-
-	// terminal for pos terminals like restaurant or vending macine
-	api_key = fmt.Sprintf("terminal-%s", api_key)
-
-	collection := client.Database(ts.Config.Databases[0].Database).Collection("api_keys")
-	_, err = collection.InsertOne(ctx, bson.M{
-		"tenant_id":       tenant_id,
-		"api_key":         api_key,
-		"title":           title,
-		"expiration_date": expirationDate,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GenerateAPIKey creates a new API key
-func GenerateAPIKey(length int) (string, error) {
-	randomBytes := make([]byte, length)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(randomBytes), nil
+	// Get the tenant by tenant_id from the database
+	tenant_collection := client.Database(ts.Config.Databases[0].Database).Collection(ts.Config.Databases[0].Tables["sales"])
+	err = tenant_collection.FindOne(ctx, bson.M{"tenant_id": tenant_id}).Decode(&tenant)
+	return
 }
