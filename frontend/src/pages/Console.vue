@@ -32,6 +32,11 @@
                                     <span>Subscription</span>
                                     <Badge class="ml-auto" :value="store.subscription.subscription_plan.toUpperCase()"  :style="`background-color: ${store.subscription.subscription_plan.toUpperCase() == 'FREE' ?'silver' : '#E1C05C'};color:black`"/>
                                 </router-link>
+                                <a class="flex items-center mx-2 py-3 px-2 gap-2" href="https://nutrixpos.com/support.html" target="_blank">
+                                    <span class="pi pi-phone" />
+                                    <span>Support</span>
+                                    <span class="pi pi-external-link ml-auto"></span>                                    
+                                </a>
                                 <Divider />
                                 <div class="flex gap-2 p-2 justify-content-between align-items-center">
                                     <div class="flex gap-2 align-items-center cursor-pointer">
