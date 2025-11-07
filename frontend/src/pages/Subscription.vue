@@ -145,9 +145,9 @@
                                         </div>    
                                     </div>
                                 </template>
-                                <template #footer>
+                                <!-- <template #footer>
                                     <Button label="Subscribe" severity="primary" class="w-full" style="background-color:#E1C05C;border-color:gold;color:black" @click="requestSusbcription('gold')" />
-                                </template>
+                                </template> -->
                             </Card>
                         </div>
                     </div>
