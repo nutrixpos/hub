@@ -31,6 +31,14 @@
                                             </ButtonGroup>
                                         </template>
                                     </Column>
+                                    <template #footer v-if="total_inventory_items_count_in_db > 1 && store.subscription.subscription_plan == 'free'">
+                                        <div class="free text-center flex-column">
+                                            <p>{{ total_inventory_items_count_in_db - 1 }} more items/s to show</p>
+                                            <Button class="mt-2" style="background-color:#E1C05C;border-color:gold;color:black">
+                                                <RouterLink to="/console/subscription">Upgrade to GOLD to unlock</RouterLink>
+                                            </Button>
+                                        </div>
+                                    </template>
                             </DataTable>
                             <Dialog v-model:visible="material_settings_dialog" modal :header="`Settings for  ${material_settings?.name}`" :style="{ width: '75rem' }" :breakpoints="{ '1199px': '50vw', '575px': '90vw' }">
                                 <div class="flex align-items-center">
@@ -57,16 +65,19 @@ import {getCurrentInstance, ref} from 'vue'
 import axios from 'axios'
 import { $dt } from '@primevue/themes';
 import {Badge, Button, ButtonGroup, Chip, Tag, Dialog, InputText} from 'primevue';
+import { globalStore } from '../stores';
 
 
 import {useToast} from 'primevue/usetoast';
 const toast = useToast()
+const store = globalStore()
 
 
 const inventory_items = ref([])
 const isInventoryTableLoading = ref(true)
 const material_settings_dialog = ref(false)
 const material_settings = ref({})
+const total_inventory_items_count_in_db = ref(0)
 
 const alert_threshold = ref(0)
 
@@ -86,6 +97,7 @@ const loadInventory = () => {
     })
     .then(response => {
         inventory_items.value = response.data.data
+        total_inventory_items_count_in_db.value = response.data.meta.total_records
         isInventoryTableLoading.value = false
     })
     

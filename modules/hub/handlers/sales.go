@@ -78,7 +78,7 @@ func GetSalesPerDay(config config.Config, logger logger.ILogger) http.HandlerFun
 			Logger: logger,
 			Config: config,
 		}
-		tenant, err := tenant_svc.AddTenantById(tenant_id)
+		tenant, err := tenant_svc.GetTenantById(tenant_id)
 		number_displayed_orders := -1
 		if tenant.Subscription.SubscriptionPlan == "free" {
 			number_displayed_orders = 1

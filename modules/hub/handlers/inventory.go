@@ -223,8 +223,17 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 		}
 
 		inventoryItems := make([]models.InventoryItem, 0)
+		total_records := 0
+
 		if len(result) > 0 {
-			inventoryItems = result[0].InventoryItems
+
+			total_records = len(result[0].InventoryItems)
+
+			if result[0].Subscription.SubscriptionPlan == "free" {
+				inventoryItems = append(inventoryItems, result[0].InventoryItems[0])
+			} else {
+				inventoryItems = result[0].InventoryItems
+			}
 		} else {
 			http.Error(w, "No inventory items found", http.StatusNotFound)
 			logger.Error("ERROR: No inventory items found")
@@ -233,6 +242,9 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 
 		response := core_handlers.JSONApiOkResponse{
 			Data: inventoryItems,
+			Meta: core_handlers.JSONAPIMeta{
+				TotalRecords: total_records,
+			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")

@@ -20,7 +20,7 @@ type TenantService struct {
 }
 
 // GetSettings returns the settings from the database
-func (ts *TenantService) AddTenantById(tenant_id string) (tenant models.Tenant, err error) {
+func (ts *TenantService) GetTenantById(tenant_id string) (tenant models.Tenant, err error) {
 
 	clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ts.Config.Databases[0].Host, ts.Config.Databases[0].Port))
 

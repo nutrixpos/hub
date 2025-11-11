@@ -68,7 +68,7 @@ func GetKoptanSuggestions(config config.Config, logger logger.ILogger) http.Hand
 			Logger: logger,
 		}
 
-		tenant, err := tenant_svc.AddTenantById(tenant_id)
+		tenant, err := tenant_svc.GetTenantById(tenant_id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			logger.Error(fmt.Sprintf("ERROR: %v", err))
