@@ -17,6 +17,7 @@ import ConfirmationService from 'primevue/confirmationservice';
 
 // Import PrimeVue CSS
 import 'primeicons/primeicons.css';                           // icons
+import '@fortawesome/fontawesome-free/css/all.css';
 
 const secure_routes = [
     {
@@ -46,6 +47,10 @@ const secure_routes = [
             {
                 path: 'subscription',
                 component: () => import('@/pages/Subscription.vue')
+            },
+            {
+                path: 'pipelines',
+                component: () => import('@/pages/Pipelines.vue')
             },
         ],
     },
@@ -83,6 +88,10 @@ const insecure_routes = [
             {
                 path: 'subscription',
                 component: () => import('@/pages/Subscription.vue')
+            },
+            {
+                path: 'pipelines',
+                component: () => import('@/pages/Pipelines.vue')
             },
         ],
     },

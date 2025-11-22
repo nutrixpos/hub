@@ -145,6 +145,21 @@ const items = ref([
         ]
     },
     {
+        label: 'Automation',
+        items: [
+            {
+                label: 'Secrets',
+                icon: 'pi pi-lock',
+                link: '/console/pipelines/secrets',
+            },
+            {
+                label: 'Pipelines',
+                icon: 'fa fa-rocket',
+                link: '/console/pipelines',
+            },
+        ]
+    },
+    {
         separator: true
     }
 ]);
