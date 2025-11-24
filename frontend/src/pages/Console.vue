@@ -55,7 +55,7 @@
 
 
                     </div>
-                    <div class="col-9 xl:col-10 flex p-0 pt-3" style="background-color: white;background-color: var(--p-gray-100);">
+                    <div class="col-9 xl:col-10 flex p-0" style="background-color: white;background-color: var(--p-gray-100);">
                         <RouterView />
                     </div>
                 </div>
@@ -156,6 +156,11 @@ const items = ref([
                 label: 'Pipelines',
                 icon: 'fa fa-rocket',
                 link: '/console/pipelines',
+            },
+            {
+                label: 'Activity Logs',
+                icon: 'fa fa-history',
+                link: '/console/pipelines/logs',
             },
         ]
     },
