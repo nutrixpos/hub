@@ -3,7 +3,10 @@
     <div class="!flex !h-full !bg-gray-50 !relative !overflow-hidden !font-sans !text-gray-900">
       
       <!-- Main Canvas Area -->
-      <div class="!flex-1 !flex !flex-col !h-full">
+      <div 
+        class="!flex-1 !flex !flex-col !h-full !transition-all !duration-300"
+        :class="{ '!blur-sm !pointer-events-none !select-none': selectedNode }"
+      >
         <!-- Editor Header (Name/Desc/Save) - No Navigation -->
         <div class="!h-16 !bg-white !border-b !border-gray-200 !flex !items-center !justify-between !px-6 !shrink-0 !z-10 !shadow-sm">
           <div class="!flex !items-center !gap-4">
@@ -21,13 +24,7 @@
             </div>
           </div>
           <div class="!flex !items-center !gap-3">
-            <button 
-              @click="handleSave"
-              class="!bg-[#001F3E] hover:!bg-[#00152b] !text-white !px-4 !py-2 !rounded-lg !font-bold !text-sm !flex !items-center !gap-2 !transition-colors !shadow-md"
-            >
-              <component :is="getIcon('Save')" :size="16" />
-              Save Workflow
-            </button>
+            <Button label="Save workflow" icon="pi pi-save" @click="handleSave" />
           </div>
         </div>
 
@@ -319,44 +316,49 @@
 
       <!-- Adding Node Modal -->
       <div v-if="addingType" class="!absolute !inset-0 !bg-black/50 !backdrop-blur-sm !z-50 !flex !items-center !justify-center !p-4">
-          <div class="!bg-white !rounded-xl !shadow-2xl !w-full !max-w-2xl !max-h-[80vh] !flex !flex-col !overflow-hidden">
-            <div class="!p-5 !border-b !border-gray-100 !flex !justify-between !items-center">
-              <h3 class="!text-lg !font-bold !text-[#001F3E]">
-                Select {{ addingType === 'TRIGGER' ? 'Trigger' : 'Action' }}
-              </h3>
-              <button @click="addingType = null">
-                  <component :is="getIcon('X')" class="!text-gray-400 hover:!text-gray-600" />
-              </button>
-            </div>
-            <div class="!p-5 !overflow-y-auto !grid !grid-cols-1 sm:!grid-cols-2 !gap-4">
-              <button 
-                  v-for="def in NODE_DEFINITIONS.filter(d => d.type === addingType)"
-                  :key="def.id"
-                  @click="addingType === 'TRIGGER' ? handleSetTrigger(def.id) : handleAddAction(def.id)"
-                  class="!flex !flex-col !items-start !p-4 !border !border-gray-200 !rounded-xl hover:!border-[#001F3E] hover:!ring-1 hover:!ring-[#001F3E] !transition-all !text-left !bg-gray-50/50 hover:!bg-white"
-                >
-                  <div class="!p-2 !rounded-lg !text-white !mb-3 !shadow-sm" :class="def.color">
-                    <component :is="getIcon(def.icon)" :size="20" />
-                  </div>
-                  <div class="!font-semibold !text-gray-900 !mb-1">{{ def.label }}</div>
-                  <div class="!text-xs !text-gray-500 !leading-relaxed">{{ def.description }}</div>
-              </button>
-            </div>
+        <div class="!bg-white !rounded-xl !shadow-2xl !w-full !max-w-2xl !max-h-[80vh] !flex !flex-col !overflow-hidden">
+          <div class="!p-5 !border-b !border-gray-100 !flex !justify-between !items-center">
+            <h3 class="!text-lg !font-bold !text-[#001F3E]">
+              Select {{ addingType === 'TRIGGER' ? 'Trigger' : 'Action' }}
+            </h3>
+            <button @click="addingType = null">
+                <component :is="getIcon('X')" class="!text-gray-400 hover:!text-gray-600" />
+            </button>
+          </div>
+          <div class="!p-5 !overflow-y-auto !grid !grid-cols-1 sm:!grid-cols-2 !gap-4">
+            <button 
+                v-for="def in NODE_DEFINITIONS.filter(d => d.type === addingType)"
+                :key="def.id"
+                @click="addingType === 'TRIGGER' ? handleSetTrigger(def.id) : handleAddAction(def.id)"
+                class="!flex !flex-col !items-start !p-4 !border !border-gray-200 !rounded-xl hover:!border-[#001F3E] hover:!ring-1 hover:!ring-[#001F3E] !transition-all !text-left !bg-gray-50/50 hover:!bg-white"
+              >
+                <div class="!p-2 !rounded-lg !text-white !mb-3 !shadow-sm" :class="def.color">
+                  <component :is="getIcon(def.icon)" :size="20" />
+                </div>
+                <div class="!font-semibold !text-gray-900 !mb-1">{{ def.label }}</div>
+                <div class="!text-xs !text-gray-500 !leading-relaxed">{{ def.description }}</div>
+            </button>
           </div>
         </div>
+      </div>
 
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted,getCurrentInstance } from 'vue';
+import {Button} from 'primevue';
 import * as LucideIcons from 'lucide-vue-next';
+import axios from 'axios';
+
+const {proxy} = getCurrentInstance()
+
 
 // ==========================================
 // CONSTANTS (Duplicated for self-containment)
 // ==========================================
-const NODE_DEFINITIONS = [
+const NODE_DEFINITIONS = ref([
   {
     id: 'trigger-low-stock',
     type: 'TRIGGER',
@@ -401,7 +403,30 @@ const NODE_DEFINITIONS = [
       { key: 'payload', label: 'JSON Payload', type: 'TEXTAREA', placeholder: '{"key": "value"}', description: 'Data to send to the webhook.' }
     ]
   }
-];
+]);
+
+
+
+const loadInventory = async () => {
+
+
+    const response = await axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/inventories`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        return response
+    })
+
+    return response
+    
+}
+
+loadInventory().then(result => {
+    NODE_DEFINITIONS.value[0].schema[1].options = result.data.data.map(item => item.name)
+})
+
 
 // ==========================================
 // STATE & PROPS
@@ -442,7 +467,7 @@ const multiSelectSearchInput = ref(null);
 // ==========================================
 const getIcon = (name) => LucideIcons[name] || LucideIcons.HelpCircle;
 
-const getDefinition = (defId) => NODE_DEFINITIONS.find(d => d.id === defId);
+const getDefinition = (defId) => NODE_DEFINITIONS.value.find(d => d.id === defId);
 
 const getPropertiesString = (props) => {
     if (!props || Object.keys(props).length === 0) return 'Not configured';
@@ -470,11 +495,15 @@ const handleNodeClick = (node) => {
 };
 
 const handleSetTrigger = (defId) => {
+    const newId = `node-${Date.now()}`;
     workflow.value.trigger = {
-        id: `node-${Date.now()}`,
+        id: newId,
         definitionId: defId,
         properties: {}
     };
+    selectedNodeId.value = newId;
+    isTypeSelectorOpen.value = false;
+    multiSelectOpen.value = null;
     addingType.value = null;
 };
 
@@ -483,11 +512,15 @@ const handleAddAction = (defId) => {
         alert("Only 1 action is allowed.");
         return;
     }
+    const newId = `node-${Date.now()}`;
     workflow.value.actions.push({
-        id: `node-${Date.now()}`,
+        id: newId,
         definitionId: defId,
         properties: {}
     });
+    selectedNodeId.value = newId;
+    isTypeSelectorOpen.value = false;
+    multiSelectOpen.value = null;
     addingType.value = null;
 };
 
