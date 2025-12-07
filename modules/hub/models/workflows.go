@@ -6,10 +6,12 @@ const (
 )
 
 type Workflow struct {
-	ID      string               `json:"id" bson:"id" mapstructure:"id"`
-	Enabled bool                 `json:"enabled" bson:"enabled" mapstructure:"enabled"`
-	Trigger WorkflowTriggerBase  `json:"trigger" bson:"trigger" mapstructure:"trigger"`
-	Actions []WorkflowActionBase `json:"actions" bson:"actions" mapstructure:"actions"`
+	ID          string               `json:"id" bson:"id" mapstructure:"id"`
+	Name        string               `json:"name" bson:"name" mapstructure:"name"`
+	Description string               `json:"description" bson:"description" mapstructure:"description"`
+	Enabled     bool                 `json:"enabled" bson:"enabled" mapstructure:"enabled"`
+	Trigger     WorkflowTriggerBase  `json:"trigger" bson:"trigger" mapstructure:"trigger"`
+	Actions     []WorkflowActionBase `json:"actions" bson:"actions" mapstructure:"actions"`
 }
 
 type WorkflowTriggerBase struct {

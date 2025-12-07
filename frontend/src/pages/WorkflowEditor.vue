@@ -351,8 +351,10 @@ import { ref, computed, onMounted, onUnmounted,getCurrentInstance } from 'vue';
 import {Button} from 'primevue';
 import * as LucideIcons from 'lucide-vue-next';
 import axios from 'axios';
+import { useRoute } from 'vue-router'
 
 const {proxy} = getCurrentInstance()
+const route = useRoute()
 
 
 // ==========================================
@@ -405,6 +407,25 @@ const NODE_DEFINITIONS = ref([
   }
 ]);
 
+
+const loadWorkflowData = async (workflowId) => {
+    const response = await axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows/${workflowId}`, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        return response
+    })
+
+    return response
+}
+
+if (route.params.id != "") {
+    loadWorkflowData(route.params.id).then(result => {
+        workflow.value = result.data.data
+    })
+}
 
 
 const loadInventory = async () => {

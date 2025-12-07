@@ -150,17 +150,17 @@ const items = ref([
             {
                 label: 'Secrets',
                 icon: 'pi pi-lock',
-                link: '/console/pipelines/secrets',
+                link: '/console/workflows/secrets',
             },
             {
-                label: 'Pipelines',
+                label: 'Workflows',
                 icon: 'fa fa-rocket',
-                link: '/console/pipelines',
+                link: '/console/workflows',
             },
             {
                 label: 'Activity Logs',
                 icon: 'fa fa-history',
-                link: '/console/pipelines/logs',
+                link: '/console/workflows/logs',
             },
         ]
     },

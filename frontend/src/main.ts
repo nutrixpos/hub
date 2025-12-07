@@ -49,16 +49,16 @@ const secure_routes = [
                 component: () => import('@/pages/Subscription.vue')
             },
             {
-                path: 'pipelines/logs',
-                component: () => import('@/pages/PipelinesActivityLog.vue'),
+                path: 'workflows/logs',
+                component: () => import('@/pages/WorkflowsActivityLog.vue'),
             },
             {
-                path: 'pipelines/put/:id?',
+                path: 'workflows/put/:id?',
                 component: () => import('@/pages/WorkflowEditor.vue'),
             },
             {
-                path: 'pipelines',
-                component: () => import('@/pages/Pipelines.vue')
+                path: 'workflows',
+                component: () => import('@/pages/Workflows.vue')
             },
         ],
     },
@@ -98,16 +98,16 @@ const insecure_routes = [
                 component: () => import('@/pages/Subscription.vue')
             },
             {
-                path: 'pipelines/logs',
-                component: () => import('@/pages/PipelinesActivityLog.vue'),
+                path: 'Workflows/logs',
+                component: () => import('@/pages/WorkflowsActivityLog.vue'),
             },
             {
-                path: 'pipelines/put/:id?',
+                path: 'Workflows/put/:id?',
                 component: () => import('@/pages/WorkflowEditor.vue'),
             },
             {
-                path: 'pipelines',
-                component: () => import('@/pages/Pipelines.vue'),
+                path: 'Workflows',
+                component: () => import('@/pages/Workflows.vue'),
             },
         ],
     },
