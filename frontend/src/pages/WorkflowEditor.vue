@@ -454,11 +454,11 @@ const saveWorkflow = () => {
       })
       .then(() => {
           loading_saving_workflow.value = false;
-          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br' });
+          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br',life:3000 });
       })
       .catch(() => {
           loading_saving_workflow.value = false;
-          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br' }); 
+          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br',life:3000 }); 
       })
 
     }else {
@@ -471,11 +471,11 @@ const saveWorkflow = () => {
       })
       .then(() => {
           loading_saving_workflow.value = false;
-          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br' });
+          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br',life:3000 });
       })
       .catch(() => {
           loading_saving_workflow.value = false;
-          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br' });
+          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br',life:3000 });
       })
     }
 }

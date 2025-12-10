@@ -46,7 +46,7 @@ const editWorkflow = (workflow) => {
         },
     })
     .then((response)=>{
-        toast.add({ severity: 'success', summary: 'Workflow updated successfully!', detail: response.data.data,group:'br' });
+        toast.add({ severity: 'success', summary: 'Workflow updated successfully!', detail: response.data.data,group:'br',life:3000 });
         getWorkflows();
     })
     .catch((err) => {
