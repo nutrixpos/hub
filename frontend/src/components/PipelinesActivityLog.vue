@@ -168,7 +168,7 @@ const workflows = ref([
     createdAt: new Date().toISOString(),
     trigger: {
       id: 'node-1',
-      definitionId: 'trigger-low-stock',
+      definitionId: 'trigger_low_stock',
       properties: { monitor_type: 'Specific Items', product_ids: ['WIDGET-X'], threshold: 20 }
     },
     actions: [

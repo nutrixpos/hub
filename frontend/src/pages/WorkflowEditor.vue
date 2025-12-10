@@ -37,7 +37,7 @@
             <!-- Trigger Node -->
             <div v-if="workflow.trigger" class="!flex !flex-col !items-center !w-full">
                <div 
-                @click="handleNodeClick(workflow.trigger)"
+                @click="handleNodeClick({...workflow.trigger})"
                 class="!relative !w-80 !p-4 !rounded-xl !border-2 !transition-all !cursor-pointer !shadow-sm !group !bg-white"
                 :class="selectedNodeId === workflow.trigger.id ? '!border-gray-900 !ring-2 !ring-gray-900/20' : '!border-gray-200 hover:!border-[#001F3E]'"
               >
@@ -52,7 +52,7 @@
                       </span>
                       <div class="!w-2 !h-2 !rounded-full !bg-green-400"></div>
                     </div>
-                    <h4 class="!font-semibold !text-gray-900 !truncate">{{ getDefinition(workflow.trigger.definitionId)?.label }}</h4>
+                    <h4 class="!font-semibold !text-gray-900 !truncate">{{ definitionId }}</h4>
                     <p class="!text-xs !text-gray-500 !truncate !mt-1">
                       {{ getPropertiesString(workflow.trigger.properties) }}
                     </p>
@@ -356,13 +356,20 @@ import { useRoute } from 'vue-router'
 const {proxy} = getCurrentInstance()
 const route = useRoute()
 
+const definitionId = computed(() => {
+  if (route.params.id != "") {
+    return getDefinition(workflow.value.trigger.type)?.label 
+  }
+   return getDefinition(workflow.value.trigger.definitionId)?.label
+});
+
 
 // ==========================================
 // CONSTANTS (Duplicated for self-containment)
 // ==========================================
 const NODE_DEFINITIONS = ref([
   {
-    id: 'trigger-low-stock',
+    id: 'trigger_low_stock',
     type: 'TRIGGER',
     label: 'Low Stock Alert',
     description: 'Triggers when product inventory falls below a specific level.',
@@ -424,6 +431,12 @@ const loadWorkflowData = async (workflowId) => {
 if (route.params.id != "") {
     loadWorkflowData(route.params.id).then(result => {
         workflow.value = result.data.data
+        workflow.value.trigger.definitionId = workflow.value.trigger.type
+        workflow.value.trigger.id = `node-${Date.now()}`
+        for (let i = 0; i < workflow.value.actions.length; i++) {
+            workflow.value.actions[i].definitionId = workflow.value.actions[i].type
+            workflow.value.actions[i].id = `node-${Date.now()+i+1}`
+        }
     })
 }
 

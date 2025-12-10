@@ -227,7 +227,7 @@ func WorkflowsGET(config config.Config, logger logger.ILogger) http.HandlerFunc 
 	}
 }
 
-func WorkflowPUT(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func WorkflowPOST(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tenant_id := "1"
 		label := "dev"
@@ -331,7 +331,13 @@ func WorkflowPUT(config config.Config, logger logger.ILogger) http.HandlerFunc {
 
 		// Set up MongoDB connection
 		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		deadline := 5 * time.Second
+		if config.Env == "dev" {
+			deadline = 1000 * time.Second
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), deadline)
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, clientOptions)

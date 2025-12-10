@@ -147,7 +147,7 @@ const emit = defineEmits(['edit', 'run', 'toggle', 'delete']);
 
 const NODE_DEFINITIONS = [
   {
-    id: 'trigger-low-stock',
+    id: 'trigger_low_stock',
     label: 'Low Stock Alert'
   },
   {
