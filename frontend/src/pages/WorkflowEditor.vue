@@ -24,7 +24,7 @@
             </div>
           </div>
           <div class="!flex !items-center !gap-3">
-            <Button label="Save workflow" icon="pi pi-save" @click="handleSave" />
+            <Button label="Save workflow" icon="pi pi-save" @click="handleSave" :loading="loading_saving_workflow" />
           </div>
         </div>
 
@@ -54,7 +54,7 @@
                     </div>
                     <h4 class="!font-semibold !text-gray-900 !truncate">{{ definitionId }}</h4>
                     <p class="!text-xs !text-gray-500 !truncate !mt-1">
-                      {{ getPropertiesString(workflow.trigger.properties) }}
+                      {{ getPropertiesString(workflow.trigger.properties, workflow.trigger.definitionId) }}
                     </p>
                   </div>
                 </div>
@@ -96,7 +96,7 @@
                       </div>
                       <h4 class="!font-semibold !text-gray-900 !truncate">{{ getDefinition(action.definitionId)?.label }}</h4>
                       <p class="!text-xs !text-gray-500 !truncate !mt-1">
-                        {{ getPropertiesString(action.properties) }}
+                        {{ getPropertiesString(action.properties, action.definitionId) }}
                       </p>
                     </div>
                   </div>
@@ -221,7 +221,13 @@
                       class="!border !border-gray-300 !rounded-md !px-3 !py-2 !text-sm !bg-white focus:!outline-none focus:!ring-2 focus:!ring-[#001F3E] focus:!border-transparent !transition-all !w-full"
                     >
                       <option value="" disabled>Select an option</option>
-                      <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                      <option 
+                        v-for="opt in field.options" 
+                        :key="typeof opt === 'object' ? opt.id : opt" 
+                        :value="typeof opt === 'object' ? opt.id : opt"
+                      >
+                        {{ typeof opt === 'object' ? opt.title : opt }}
+                      </option>
                     </select>
 
                     <!-- Multi Select (Enhanced) -->
@@ -352,9 +358,13 @@ import {Button} from 'primevue';
 import * as LucideIcons from 'lucide-vue-next';
 import axios from 'axios';
 import { useRoute } from 'vue-router'
+import { useToast } from "primevue/usetoast";
 
+
+const toast = useToast()
 const {proxy} = getCurrentInstance()
 const route = useRoute()
+const loading_saving_workflow = ref(false);
 
 const definitionId = computed(() => {
   if (route.params.id != "") {
@@ -376,20 +386,29 @@ const NODE_DEFINITIONS = ref([
     icon: 'Package',
     color: '!bg-orange-500',
     schema: [
-      { key: 'monitor_type', label: 'Monitor Type', type: 'SELECT', options: ['Any Item', 'Specific Items'], required: true },
+      { 
+        key: 'monitor_type', 
+        label: 'Monitor Type', 
+        type: 'SELECT', 
+        options: [
+          { id: 'any_item', title: 'Any Item' },
+          { id: 'specific_items', title: 'Specific Items' }
+        ], 
+        required: true 
+      },
       { 
         key: 'product_ids', 
         label: 'Select Products', 
         type: 'MULTI_SELECT', 
         options: ['WIDGET-X', 'GADGET-Y', 'GIZMO-Z', 'SUPER-TOOL-2000', 'IPHONE-15'], 
         required: true,
-        condition: { key: 'monitor_type', value: 'Specific Items' }
+        condition: { key: 'monitor_type', value: 'specific_items' }
       },
       { key: 'threshold', label: 'Minimum Stock Level', type: 'NUMBER', placeholder: '10', required: true }
     ]
   },
   {
-    id: 'trigger-manual',
+    id: 'trigger_manual',
     type: 'TRIGGER',
     label: 'Manual Trigger',
     description: 'Manually execute this workflow from the dashboard.',
@@ -400,7 +419,7 @@ const NODE_DEFINITIONS = ref([
     ]
   },
   {
-    id: 'action-n8n-webhook',
+    id: 'action_n8n_webhook',
     type: 'ACTION',
     label: 'n8n Webhook',
     description: 'Trigger an external n8n workflow.',
@@ -414,6 +433,52 @@ const NODE_DEFINITIONS = ref([
   }
 ]);
 
+const saveWorkflow = () => {
+
+    loading_saving_workflow.value = true;
+
+    if (route.params.id == "") {
+
+      workflow.value.trigger.type = workflow.value.trigger.definitionId
+
+      workflow.value.actions.forEach(action => {
+        action.type = action.definitionId
+      })
+
+      axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows`, {
+        data: workflow.value,
+      }, {
+          headers: {
+              Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+          }
+      })
+      .then(() => {
+          loading_saving_workflow.value = false;
+          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br' });
+      })
+      .catch(() => {
+          loading_saving_workflow.value = false;
+          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br' }); 
+      })
+
+    }else {
+      axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows/${workflow.value.id}`, {
+        data: workflow.value,
+      }, {
+          headers: {
+              Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+          }
+      })
+      .then(() => {
+          loading_saving_workflow.value = false;
+          toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br' });
+      })
+      .catch(() => {
+          loading_saving_workflow.value = false;
+          toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br' });
+      })
+    }
+}
 
 const loadWorkflowData = async (workflowId) => {
     const response = await axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows/${workflowId}`, {
@@ -433,9 +498,38 @@ if (route.params.id != "") {
         workflow.value = result.data.data
         workflow.value.trigger.definitionId = workflow.value.trigger.type
         workflow.value.trigger.id = `node-${Date.now()}`
+        
+        // Initialize properties and map trigger-specific fields
+        if (!workflow.value.trigger.properties) {
+            workflow.value.trigger.properties = {}
+        }
+        
+        // Map trigger properties based on trigger type
+        if (workflow.value.trigger.type === 'trigger_low_stock') {
+            if (workflow.value.trigger.monitor_type) {
+                workflow.value.trigger.properties.monitor_type = workflow.value.trigger.monitor_type
+            }
+            if (workflow.value.trigger.product_ids) {
+                workflow.value.trigger.properties.product_ids = workflow.value.trigger.product_ids
+            }
+            if (workflow.value.trigger.threshold !== undefined) {
+                workflow.value.trigger.properties.threshold = workflow.value.trigger.threshold
+            }
+        }
+        
         for (let i = 0; i < workflow.value.actions.length; i++) {
             workflow.value.actions[i].definitionId = workflow.value.actions[i].type
             workflow.value.actions[i].id = `node-${Date.now()+i+1}`
+            // Initialize properties if it doesn't exist
+            if (!workflow.value.actions[i].properties) {
+                workflow.value.actions[i].properties = {}
+
+                if (workflow.value.actions[i].type == 'action_n8n_webhook') {
+                    workflow.value.actions[i].properties.webhook_url = workflow.value.actions[i].webhook_url
+                    workflow.value.actions[i].properties.method = workflow.value.actions[i].method
+                    // workflow.value.actions[i].properties.payload = workflow.value.actions[i].payload
+                }
+            }
         }
     })
 }
@@ -480,8 +574,6 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['save']);
-
 // Local mutable copy of workflow
 const workflow = ref(JSON.parse(JSON.stringify(props.initialWorkflow)));
 
@@ -503,8 +595,23 @@ const getIcon = (name) => LucideIcons[name] || LucideIcons.HelpCircle;
 
 const getDefinition = (defId) => NODE_DEFINITIONS.value.find(d => d.id === defId);
 
-const getPropertiesString = (props) => {
+const getPropertiesString = (props, definitionId) => {
     if (!props || Object.keys(props).length === 0) return 'Not configured';
+    
+    // Special handling for trigger_low_stock
+    if (definitionId === 'trigger_low_stock') {
+        const parts = [];
+        if (props.monitor_type === 'any_item') {
+            parts.push('Any item');
+        } else if (props.monitor_type === 'specific_items' && props.product_ids && props.product_ids.length > 0) {
+            parts.push(`Specific items: ${props.product_ids.join(', ')}`);
+        }
+        if (props.threshold !== undefined) {
+            parts.push(`threshold: ${props.threshold}`);
+        }
+        return parts.length > 0 ? parts.join(' | ') : 'Not configured';
+    }
+    
     return Object.values(props).join(', ');
 };
 
@@ -578,6 +685,34 @@ const handleDefinitionChange = (newDefId) => {
 const updateNodeProperty = (key, value) => {
     if (!selectedNode.value) return;
     selectedNode.value.properties[key] = value;
+    
+    // Sync properties to workflow object for backend compatibility
+    if (workflow.value.trigger && workflow.value.trigger.id === selectedNode.value.id) {
+        // Update trigger properties
+        if (workflow.value.trigger.definitionId === 'trigger_low_stock') {
+            if (key === 'monitor_type') {
+                workflow.value.trigger.monitor_type = value;
+            } else if (key === 'product_ids') {
+                workflow.value.trigger.product_ids = value;
+            } else if (key === 'threshold') {
+                workflow.value.trigger.threshold = value;
+            }
+        }
+    } else {
+        // Update action properties
+        const actionIndex = workflow.value.actions.findIndex(a => a.id === selectedNode.value.id);
+        if (actionIndex !== -1) {
+            if (workflow.value.actions[actionIndex].definitionId === 'action_n8n_webhook') {
+                if (key === 'webhook_url') {
+                    workflow.value.actions[actionIndex].webhook_url = value;
+                } else if (key === 'method') {
+                    workflow.value.actions[actionIndex].method = value;
+                } else if (key === 'payload') {
+                    workflow.value.actions[actionIndex].payload = value;
+                }
+            }
+        }
+    }
 };
 
 const checkCondition = (field, data) => {
@@ -588,7 +723,7 @@ const checkCondition = (field, data) => {
 const handleSave = () => {
     if (!workflow.value.name) return alert("Please give your workflow a name.");
     if (!workflow.value.trigger) return alert("A trigger is required.");
-    emit('save', JSON.parse(JSON.stringify(workflow.value)));
+    saveWorkflow()
 };
 
 // ==========================================
@@ -606,7 +741,9 @@ const toggleMultiSelect = (key) => {
     multiSelectSearch.value = '';
     // Focus search next tick
     setTimeout(() => {
-       if (multiSelectSearchInput.value) multiSelectSearchInput.value.focus();
+       if (multiSelectSearchInput.value && typeof multiSelectSearchInput.value.focus === 'function') {
+         multiSelectSearchInput.value.focus();
+       }
     }, 50);
   }
 };

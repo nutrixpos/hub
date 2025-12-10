@@ -356,41 +356,183 @@ func WorkflowPOST(config config.Config, logger logger.ILogger) http.HandlerFunc 
 		db_workflow["enabled"] = workflow.Enabled
 
 		// add new workflow
-		if workflow.ID == "" {
-			// Define the filter
-			filter := bson.M{
-				"tenant_id": tenant_id,
+		// Define the filter
+		filter := bson.M{
+			"tenant_id": tenant_id,
+		}
+
+		_, err = collection.UpdateOne(ctx, filter, bson.M{"$push": bson.M{"workflows": db_workflow}})
+		if err != nil {
+			http.Error(w, "Failed to insert workflow", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func WorkflowPATCH(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant_id := "1"
+		label := "dev"
+
+		// Get workflow ID from URL params
+		params := mux.Vars(r)
+		workflow_id := params["id"]
+
+		if workflow_id == "" {
+			http.Error(w, "id is required", http.StatusBadRequest)
+			return
+		}
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
 			}
 
-			_, err = collection.UpdateOne(ctx, filter, bson.M{"$push": bson.M{"workflows": db_workflow}})
+			decodedData, err := base64.StdEncoding.DecodeString(token)
 			if err != nil {
-				http.Error(w, "Failed to insert workflow", http.StatusInternalServerError)
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
 				logger.Error(fmt.Sprintf("ERROR: %v", err))
 				return
 			}
 
-			w.WriteHeader(http.StatusOK)
-			return
-		} else {
-			// update existing workflow
-			filter := bson.M{
-				"tenant_id":    tenant_id,
-				"workflows.id": workflow.ID,
-			}
-
-			update := bson.M{
-				"$set": bson.M{
-					"workflows.$": db_workflow,
-				},
-			}
-
-			_, err = collection.UpdateOne(ctx, filter, update)
+			var claims map[string]interface{}
+			err = json.Unmarshal(decodedData, &claims)
 			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
 				logger.Error(fmt.Sprintf("ERROR: %v", err))
-				http.Error(w, "Failed to update workflow", http.StatusInternalServerError)
+				return
+			}
+
+			var ok bool
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok || tenant_id == "" {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+
+			label = claims["name"].(string)
+			if label == "" {
+				http.Error(w, "name claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: name claim is required")
 				return
 			}
 		}
 
+		request := struct {
+			Data map[string]interface{} `json:"data"`
+		}{}
+
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if request.Data == nil {
+			http.Error(w, "data is required", http.StatusBadRequest)
+			return
+		}
+
+		var workflow models.Workflow
+		decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			DecodeHook: common.StringToTimeHook(),
+			Result:     &workflow,
+		})
+
+		err = decoder.Decode(request.Data)
+
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to decode workflow: %v", err))
+			http.Error(w, "Failed to decode workflow", http.StatusBadRequest)
+			return
+		}
+
+		db_workflow := map[string]interface{}{}
+		db_workflow["actions"] = make([]interface{}, 0)
+
+		switch workflow.Trigger.Type {
+		case models.WorkflowTriggerTypeLowStockLabel:
+			var trigger models.WorkflowLowStockTrigger
+			err = mapstructure.Decode(request.Data["trigger"], &trigger)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to decode low stock trigger: %v", err))
+				http.Error(w, "Failed to decode low stock trigger", http.StatusBadRequest)
+				return
+			}
+			db_workflow["trigger"] = trigger
+			break
+		}
+
+		for index, action := range workflow.Actions {
+			switch action.Type {
+			case models.WorkflowActionTypeN8nWebhookLabel:
+				var webhookAction models.WorkflowN8nWebhookAction
+				err = mapstructure.Decode(request.Data["actions"].([]interface{})[index], &webhookAction)
+				if err != nil {
+					logger.Error(fmt.Sprintf("Failed to decode n8n webhook action: %v", err))
+					http.Error(w, "Failed to decode n8n webhook action", http.StatusBadRequest)
+					return
+				}
+				db_workflow["actions"] = append(db_workflow["actions"].([]interface{}), webhookAction)
+			}
+		}
+
+		// Set up MongoDB connection
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
+
+		deadline := 5 * time.Second
+		if config.Env == "dev" {
+			deadline = 1000 * time.Second
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), deadline)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+		defer client.Disconnect(ctx)
+
+		// Access the collection
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+		db_workflow["id"] = workflow_id
+		db_workflow["name"] = workflow.Name
+		db_workflow["description"] = workflow.Description
+		db_workflow["enabled"] = workflow.Enabled
+
+		// Update existing workflow
+		filter := bson.M{
+			"tenant_id":    tenant_id,
+			"workflows.id": workflow_id,
+		}
+
+		update := bson.M{
+			"$set": bson.M{
+				"workflows.$": db_workflow,
+			},
+		}
+
+		result, err := collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			http.Error(w, "Failed to update workflow", http.StatusInternalServerError)
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			http.Error(w, "Workflow not found", http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

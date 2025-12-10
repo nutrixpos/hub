@@ -36,7 +36,7 @@ const workflows = ref([]);
 const { proxy } = getCurrentInstance();
 
 const editWorkflow = (workflow) => {
-    axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows`, {
+    axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows/${workflow.id}`, {
         data: {
             ...workflow,
         }
