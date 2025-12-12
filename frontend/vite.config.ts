@@ -18,7 +18,9 @@ export default defineConfig({
   plugins: [
     vue(),
     react(),
-    vueDevTools(),
+    vueDevTools({
+      launchEditor: 'antigravity',
+    }),
     tailwindcss(),
   ],
   resolve: {
@@ -26,5 +28,5 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-  
+
 })

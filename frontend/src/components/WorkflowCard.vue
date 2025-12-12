@@ -126,7 +126,7 @@
                 :to="`/console/workflows/put/${workflow.id}`"
                 class="!text-gray-400 hover:!text-gray-600 !transition-colors !p-1.5 hover:!bg-gray-50 !rounded-md"
             >
-                <component :is="getIcon('ExternalLink')" :size="16" />
+                <component :is="getIcon('Pencil')" :size="16" />
         </router-link>
         </div>
     </div>
