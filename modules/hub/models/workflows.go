@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 const (
 	WorkflowTriggerTypeLowStockLabel  = "trigger_low_stock"
 	WorkflowActionTypeN8nWebhookLabel = "action_n8n_webhook"
@@ -12,6 +14,15 @@ type Workflow struct {
 	Enabled     bool                 `json:"enabled" bson:"enabled" mapstructure:"enabled"`
 	Trigger     WorkflowTriggerBase  `json:"trigger" bson:"trigger" mapstructure:"trigger"`
 	Actions     []WorkflowActionBase `json:"actions" bson:"actions" mapstructure:"actions"`
+	Runs        []WorkflowRun        `json:"runs" bson:"runs" mapstructure:"runs"`
+}
+
+type WorkflowRun struct {
+	ID        string    `json:"id" bson:"id" mapstructure:"id"`
+	Logs      []string  `json:"logs" bson:"logs" mapstructure:"logs"`
+	StartDate time.Time `json:"start_date" bson:"start_date" mapstructure:"start_date"`
+	EndDate   time.Time `json:"end_date" bson:"end_date" mapstructure:"end_date"`
+	Status    string    `json:"status" bson:"status" mapstructure:"status"`
 }
 
 type WorkflowTriggerBase struct {
