@@ -42,6 +42,12 @@ type IBackgroundWorkerModule interface {
 	RegisterBackgroundWorkers() []Worker
 }
 
+// IEventHandlerModule is an interface that modules can implement to add event handlers.
+// RegisterEventHandlers is called by the app manager to register the event handlers.
+type IEventHandlerModule interface {
+	RegisterEventHandlers(eb EventBus) error
+}
+
 // ISeederModule is an interface that modules can implement to add seeders.
 // Seed is called by the app manager to seed the database.
 // GetSeedables is called by the app manager to get the list of seedables.

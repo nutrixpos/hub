@@ -49,7 +49,7 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 }
 
 // RunModule initializes and registers a module from the module builder.
-func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder) error {
+func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder, eventBus EventBus) error {
 
 	if manager.Modules == nil {
 		manager.Modules = make(map[string]IBaseModule)
@@ -89,6 +89,17 @@ func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_
 			go bw_svc.Start()
 		}
 
+	}
+
+	if module_builder.isRegisterEventHandlers {
+		if m, ok := module_builder.module.(IEventHandlerModule); ok {
+			err := m.RegisterEventHandlers(eventBus)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
+		}
 	}
 
 	logger.Info("Started module (" + name + ")")

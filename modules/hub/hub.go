@@ -3,6 +3,7 @@ package hub
 import (
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules/hub/events"
 	"github.com/nutrixpos/hub/modules/hub/handlers"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/hub/modules/hub/services"
@@ -54,6 +55,11 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/subscriptions/request", pos_middlewares.AllowCors(handlers.SubcriptionRequest(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/payment_callback", pos_middlewares.AllowCors(handlers.PaymobSubscribeCallbackPOST(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/request_cancellation", pos_middlewares.AllowCors(handlers.SubscriptionRequestCancellation(h.Config, h.Logger))).Methods("POST", "OPTIONS")
+}
+
+func (h *HubModule) RegisterEventHandlers(eb EventBus) error {
+	eb.RegisterEventHandler(events.LowStockEvent, h.SubscriptionRequest)
+	return nil
 }
 
 func (h *HubModule) EnsureSeeded() error {
