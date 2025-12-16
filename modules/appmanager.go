@@ -8,6 +8,7 @@ package modules
 import (
 	"fmt"
 
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
 )
@@ -22,14 +23,15 @@ type AppManager struct {
 	// and the value is the module itself.
 	Modules map[string]IBaseModule
 	// Logger is a logger.ILogger, which is used to log messages.
-	Logger logger.ILogger
+	Logger   logger.ILogger
+	EventBus common.EventBus
 }
 
 // Run starts all saved module builders by igniting each module.
 func (manager *AppManager) Run() (err error) {
 
 	for _, saved_module_builder := range saved_module_builders {
-		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder)
+		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder, manager.EventBus)
 	}
 
 	return err
@@ -42,6 +44,8 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 		Logger: manager.Logger,
 	}
 
+	module.SetName(module_name)
+
 	builder.module = module
 	builder.module_name = module_name
 
@@ -49,7 +53,7 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 }
 
 // RunModule initializes and registers a module from the module builder.
-func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder, eventBus EventBus) error {
+func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder, eventBus common.EventBus) error {
 
 	if manager.Modules == nil {
 		manager.Modules = make(map[string]IBaseModule)
@@ -91,9 +95,9 @@ func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_
 
 	}
 
-	if module_builder.isRegisterEventHandlers {
+	if module_builder.isRegisterEventBus {
 		if m, ok := module_builder.module.(IEventHandlerModule); ok {
-			err := m.RegisterEventHandlers(eventBus)
+			err := m.Subscribe(eventBus)
 			if err != nil {
 				return err
 			}

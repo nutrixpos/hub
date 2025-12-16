@@ -16,6 +16,8 @@ var saved_module_builders = make(map[string]*ModuleBuilder)
 // IBaseModule is the interface that all modules must implement.
 // It provides methods for starting and stopping the module.
 type IBaseModule interface {
+	SetName(string) error
+	GetName() string
 	// OnStart is called when the module is started.
 	OnStart() func() error
 	// OnEnd is called when the module is stopped.
@@ -43,9 +45,9 @@ type IBackgroundWorkerModule interface {
 }
 
 // IEventHandlerModule is an interface that modules can implement to add event handlers.
-// RegisterEventHandlers is called by the app manager to register the event handlers.
+// Subscribe is called by the app manager to subscribe to the event bus.
 type IEventHandlerModule interface {
-	RegisterEventHandlers(eb EventBus) error
+	Subscribe() error
 }
 
 // ISeederModule is an interface that modules can implement to add seeders.

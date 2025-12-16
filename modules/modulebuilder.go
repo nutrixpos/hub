@@ -22,7 +22,7 @@ type ModuleBuilder struct {
 	workers                     []Worker
 	isRegisterHttpHandlers      bool
 	isRegisterBackgroundWorkers bool
-	isRegisterEventHandlers     bool
+	isRegisterEventBus          bool
 	httpRouter                  *mux.Router
 }
 
@@ -43,10 +43,10 @@ func (builder *ModuleBuilder) RegisterBackgroundWorkers() *ModuleBuilder {
 	return builder
 }
 
-// RegisterEventHandlers enables registering event handlers for the module.
-func (builder *ModuleBuilder) RegisterEventHandlers() *ModuleBuilder {
+// RegisterEventBus enables registering event bus for the module.
+func (builder *ModuleBuilder) RegisterEventBus() *ModuleBuilder {
 
-	builder.isRegisterEventHandlers = true
+	builder.isRegisterEventBus = true
 
 	return builder
 }

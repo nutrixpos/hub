@@ -2,7 +2,9 @@ package hub
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules"
 	"github.com/nutrixpos/hub/modules/hub/events"
 	"github.com/nutrixpos/hub/modules/hub/handlers"
 	"github.com/nutrixpos/hub/modules/hub/models"
@@ -12,9 +14,21 @@ import (
 )
 
 type HubModule struct {
-	Config   config.Config
-	Logger   logger.ILogger
-	Settings models.Settings
+	Name            string
+	Config          config.Config
+	Logger          logger.ILogger
+	Settings        models.Settings
+	EventBus        common.EventBus
+	EventHandlersId []string
+}
+
+func (h *HubModule) SetName(name string) error {
+	h.Name = name
+	return nil
+}
+
+func (h *HubModule) GetName() string {
+	return h.Name
 }
 
 // OnStart is called when the core module is started.
@@ -32,7 +46,9 @@ func (h *HubModule) OnStart() func() error {
 // OnEnd is called when the core module is ended.
 func (h *HubModule) OnEnd() func() {
 	return func() {
-
+		for _, handler_id := range h.EventHandlersId {
+			h.EventBus.UnregisterHandler(events.EventLowStockId, handler_id)
+		}
 	}
 }
 
@@ -57,8 +73,12 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/subscriptions/request_cancellation", pos_middlewares.AllowCors(handlers.SubscriptionRequestCancellation(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 }
 
-func (h *HubModule) RegisterEventHandlers(eb EventBus) error {
-	eb.RegisterEventHandler(events.LowStockEvent, h.SubscriptionRequest)
+func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
+	return nil
+}
+
+func (h *HubModule) RegisterEventBus(eb common.EventBus) error {
+	h.EventBus = eb
 	return nil
 }
 
