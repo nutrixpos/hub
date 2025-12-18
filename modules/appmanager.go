@@ -24,14 +24,14 @@ type AppManager struct {
 	Modules map[string]IBaseModule
 	// Logger is a logger.ILogger, which is used to log messages.
 	Logger   logger.ILogger
-	EventBus common.EventBus
+	EventBus common.EventManager
 }
 
 // Run starts all saved module builders by igniting each module.
 func (manager *AppManager) Run() (err error) {
 
 	for _, saved_module_builder := range saved_module_builders {
-		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder, manager.EventBus)
+		manager.RunModule(saved_module_builder.module_name, manager.Logger, saved_module_builder)
 	}
 
 	return err
@@ -53,7 +53,7 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 }
 
 // RunModule initializes and registers a module from the module builder.
-func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder, eventBus common.EventBus) error {
+func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_builder *ModuleBuilder) error {
 
 	if manager.Modules == nil {
 		manager.Modules = make(map[string]IBaseModule)
@@ -71,6 +71,18 @@ func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_
 	err := module_builder.module.OnStart()()
 	if err != nil {
 		panic(err)
+	}
+
+	if module_builder.isRegisterEventManager {
+		if m, ok := module_builder.module.(IEventHandlerModule); ok {
+			err = m.RegisterEventManager(module_builder.eventManager)
+			if err != nil {
+				return err
+			}
+
+		} else {
+			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
+		}
 	}
 
 	if module_builder.isRegisterHttpHandlers {
@@ -93,17 +105,6 @@ func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_
 			go bw_svc.Start()
 		}
 
-	}
-
-	if module_builder.isRegisterEventBus {
-		if m, ok := module_builder.module.(IEventHandlerModule); ok {
-			err := m.Subscribe(eventBus)
-			if err != nil {
-				return err
-			}
-		} else {
-			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
-		}
 	}
 
 	logger.Info("Started module (" + name + ")")

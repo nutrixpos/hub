@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules/hub/events"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
@@ -117,6 +119,11 @@ func InventoryItemsPatch(config config.Config, logger logger.ILogger) http.Handl
 		}
 
 		existing_item_index, err := getInventoryItemById(request.Meta.Id, existing.InventoryItems)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		new_items := existing.InventoryItems
 
 		for key, value := range request.Data {
@@ -255,7 +262,7 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 	}
 }
 
-func InventoryItemsPut(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manager common.EventManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		tenant_id := "1"
@@ -422,6 +429,18 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 			http.Error(w, "Failed to append items to the inventory_items property", http.StatusInternalServerError)
 			logger.Error(fmt.Sprintf("ERROR: %v", err))
 			return
+		}
+
+		for _, item := range items {
+			if item.Settings.AlertEnabled && item.Quantity <= item.Settings.AlertThreshold {
+				event_manager.Publish(events.EventLowStockId, events.EventLowStockData{
+					TenantId:  tenant_id,
+					ItemID:    item.ID,
+					ItemName:  item.Name,
+					Threshold: item.Settings.AlertThreshold,
+					Current:   item.Quantity,
+				})
+			}
 		}
 
 	}

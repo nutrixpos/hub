@@ -5,8 +5,9 @@ const (
 )
 
 type EventLowStockData struct {
+	TenantId  string
 	ItemID    string
 	ItemName  string
-	Threshold int
-	Current   int
+	Threshold float64
+	Current   float64
 }

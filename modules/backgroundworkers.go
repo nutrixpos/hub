@@ -8,8 +8,6 @@
 package modules
 
 import (
-	"time"
-
 	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/pos/common/logger"
 )
@@ -25,12 +23,7 @@ type background_worker_svc struct {
 func (b *background_worker_svc) Start() {
 	for _, worker := range b.Workers {
 		go func(worker Worker) {
-			// Create a ticker that will fire at the specified interval.
-			ticker := time.NewTicker(worker.Interval)
-			// Run the task for each tick.
-			for range ticker.C {
-				worker.Task()
-			}
+			worker.Task()
 		}(worker)
 	}
 }

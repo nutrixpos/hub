@@ -1,6 +1,8 @@
 package hub
 
 import (
+	"fmt"
+
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
@@ -14,12 +16,12 @@ import (
 )
 
 type HubModule struct {
-	Name            string
-	Config          config.Config
-	Logger          logger.ILogger
-	Settings        models.Settings
-	EventBus        common.EventBus
-	EventHandlersId []string
+	Name          string
+	Config        config.Config
+	Logger        logger.ILogger
+	Settings      models.Settings
+	EventManager  common.EventManager
+	EventChannels map[string][]common.EventChannel
 }
 
 func (h *HubModule) SetName(name string) error {
@@ -46,15 +48,12 @@ func (h *HubModule) OnStart() func() error {
 // OnEnd is called when the core module is ended.
 func (h *HubModule) OnEnd() func() {
 	return func() {
-		for _, handler_id := range h.EventHandlersId {
-			h.EventBus.UnregisterHandler(events.EventLowStockId, handler_id)
-		}
 	}
 }
 
 func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/logs", pos_middlewares.AllowCors(handlers.LogsPost(h.Config, h.Logger))).Methods("POST", "OPTIONS")
-	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger))).Methods("PUT", "OPTIONS")
+	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger, h.EventManager))).Methods("PUT", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsGet(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPatch(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
 	router.Handle("/v1/api/sales", pos_middlewares.AllowCors(handlers.GetSalesPerDay(h.Config, h.Logger))).Methods("GET", "OPTIONS")
@@ -73,13 +72,30 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/subscriptions/request_cancellation", pos_middlewares.AllowCors(handlers.SubscriptionRequestCancellation(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 }
 
-func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
+func (h *HubModule) RegisterEventManager(manager common.EventManager) error {
+
+	h.EventManager = manager
+	eventChannel, err := manager.Subscribe(events.EventLowStockId)
+	if err != nil {
+		h.Logger.Error(err.Error())
+		return err
+	}
+	h.EventChannels = make(map[string][]common.EventChannel)
+	h.EventChannels[events.EventLowStockId] = append(h.EventChannels[events.EventLowStockId], eventChannel)
+
 	return nil
 }
 
-func (h *HubModule) RegisterEventBus(eb common.EventBus) error {
-	h.EventBus = eb
-	return nil
+func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
+	return []modules.Worker{
+		{
+			Task: func() {
+				for low_stock_channel := range h.EventChannels[events.EventLowStockId][0].Channel {
+					fmt.Println("Received:", low_stock_channel.(events.EventLowStockData).ItemName)
+				}
+			},
+		},
+	}
 }
 
 func (h *HubModule) EnsureSeeded() error {

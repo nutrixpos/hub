@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
 	"github.com/nutrixpos/hub/modules"
 	"github.com/nutrixpos/hub/modules/hub"
@@ -55,12 +56,14 @@ func main() {
 		Logger: &logger,
 	}
 
+	event_manager := common.NewDefaultEventManager()
+
 	// Load the core module, register HTTP handlers and background workers, and save the module
 	appmanager.LoadModule(&hub.HubModule{
 		Logger:   &logger,
 		Config:   conf,
 		Settings: settings,
-	}, "hub").RegisterHttpHandlers(router).RegisterBackgroundWorkers().Save()
+	}, "hub").RegisterEventManager(event_manager).RegisterHttpHandlers(router).RegisterBackgroundWorkers().Save()
 
 	// Ignite the app manager to start all modules
 	appmanager.Run()
