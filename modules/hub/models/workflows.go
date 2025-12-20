@@ -1,15 +1,20 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 const (
-	WorkflowTriggerTypeLowStockLabel  = "trigger_low_stock"
-	WorkflowActionTypeN8nWebhookLabel = "action_n8n_webhook"
+	WorkflowTriggerTypeLowStockLabel   = "trigger_low_stock"
+	WorkflowActionTypeN8nWebhookLabel  = "action_n8n_webhook"
+	TriggerLowStockMonitorTypeAny      = "any_item"
+	TriggerLowStockMonitorTypeSpecific = "specific_items"
 )
 
 type Workflow struct {
 	ID          string               `json:"id" bson:"id" mapstructure:"id"`
 	Name        string               `json:"name" bson:"name" mapstructure:"name"`
+	Status      string               `json:"status" bson:"status" mapstructure:"status"`
 	Description string               `json:"description" bson:"description" mapstructure:"description"`
 	Enabled     bool                 `json:"enabled" bson:"enabled" mapstructure:"enabled"`
 	Trigger     WorkflowTriggerBase  `json:"trigger" bson:"trigger" mapstructure:"trigger"`
@@ -18,11 +23,17 @@ type Workflow struct {
 }
 
 type WorkflowRun struct {
-	ID        string    `json:"id" bson:"id" mapstructure:"id"`
-	Logs      []string  `json:"logs" bson:"logs" mapstructure:"logs"`
-	StartDate time.Time `json:"start_date" bson:"start_date" mapstructure:"start_date"`
-	EndDate   time.Time `json:"end_date" bson:"end_date" mapstructure:"end_date"`
-	Status    string    `json:"status" bson:"status" mapstructure:"status"`
+	ID        string           `json:"id" bson:"id" mapstructure:"id"`
+	Logs      []WorkflowRunLog `json:"logs" bson:"logs" mapstructure:"logs"`
+	StartTime time.Time        `json:"start_time" bson:"start_time" mapstructure:"start_time"`
+	EndTime   time.Time        `json:"end_time" bson:"end_time" mapstructure:"end_time"`
+	Status    string           `json:"status" bson:"status" mapstructure:"status"`
+}
+
+type WorkflowRunLog struct {
+	Level     string    `json:"level" bson:"level" mapstructure:"level"`
+	TimeStamp time.Time `json:"timestamp" bson:"timestamp" mapstructure:"timestamp"`
+	Message   string    `json:"message" bson:"message" mapstructure:"message"`
 }
 
 type WorkflowTriggerBase struct {
@@ -37,8 +48,20 @@ type WorkflowLowStockTrigger struct {
 	WorkflowTriggerBase `json:",inline" bson:",inline" mapstructure:",squash"`
 	MonitorType         string   `json:"monitor_type" bson:"monitor_type" mapstructure:"monitor_type"`
 	ProductIDs          []string `json:"product_ids" bson:"product_ids" mapstructure:"product_ids"`
-	Threshold           float64  `json:"threshold" bson:"threshold" mapstructure:"threshold"`
 	Output              string   `json:"output" bson:"output" mapstructure:"output"`
+}
+
+type WorkflowLowStockTriggerOutput struct {
+	Items []WorkflowLowStockTriggerOutputItem `json:"items" bson:"items" mapstructure:"items"`
+}
+
+type WorkflowLowStockTriggerOutputItem struct {
+	TenantId string   `json:"tenant_id" bson:"tenant_id" mapstructure:"tenant_id"`
+	Labels   []string `json:"labels" bson:"labels" mapstructure:"labels"`
+	ItemID   string   `json:"item_id" bson:"item_id" mapstructure:"item_id"`
+	ItemName string   `json:"item_name" bson:"item_name" mapstructure:"item_name"`
+	Quantity float64  `json:"quantity" bson:"quantity" mapstructure:"quantity"`
+	Unit     string   `json:"unit" bson:"unit" mapstructure:"unit"`
 }
 
 type WorkflowN8nWebhookAction struct {

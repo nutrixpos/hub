@@ -233,11 +233,16 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 		total_records := 0
 
 		if len(result) > 0 {
+			if result[0].InventoryItems == nil {
+				result[0].InventoryItems = make([]models.InventoryItem, 0)
+			}
 
 			total_records = len(result[0].InventoryItems)
 
 			if result[0].Subscription.SubscriptionPlan == "free" {
-				inventoryItems = append(inventoryItems, result[0].InventoryItems[0])
+				if len(result[0].InventoryItems) > 0 {
+					inventoryItems = append(inventoryItems, result[0].InventoryItems[0])
+				}
 			} else {
 				inventoryItems = result[0].InventoryItems
 			}
@@ -432,7 +437,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 		}
 
 		for _, item := range items {
-			if item.Settings.AlertEnabled && item.Quantity <= item.Settings.AlertThreshold {
+			if item.Quantity <= item.Settings.AlertThreshold {
 				event_manager.Publish(events.EventLowStockId, events.EventLowStockData{
 					TenantId:  tenant_id,
 					ItemID:    item.ID,

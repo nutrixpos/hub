@@ -1,8 +1,6 @@
 package hub
 
 import (
-	"fmt"
-
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
@@ -91,7 +89,15 @@ func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
 		{
 			Task: func() {
 				for low_stock_channel := range h.EventChannels[events.EventLowStockId][0].Channel {
-					fmt.Println("Received:", low_stock_channel.(events.EventLowStockData).ItemName)
+
+					ws := services.WorkflowsService{
+						Config: h.Config,
+						Logger: h.Logger,
+					}
+					err := ws.RunLowStockTriggeredWorkflows(low_stock_channel.(events.EventLowStockData))
+					if err != nil {
+						h.Logger.Error(err.Error())
+					}
 				}
 			},
 		},

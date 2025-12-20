@@ -354,6 +354,8 @@ func WorkflowPOST(config config.Config, logger logger.ILogger) http.HandlerFunc 
 		db_workflow["name"] = workflow.Name
 		db_workflow["description"] = workflow.Description
 		db_workflow["enabled"] = workflow.Enabled
+		db_workflow["status"] = "idle"
+		db_workflow["runs"] = make([]models.WorkflowRun, 0)
 
 		// add new workflow
 		// Define the filter

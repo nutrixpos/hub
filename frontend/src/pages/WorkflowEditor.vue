@@ -403,8 +403,7 @@ const NODE_DEFINITIONS = ref([
         options: ['WIDGET-X', 'GADGET-Y', 'GIZMO-Z', 'SUPER-TOOL-2000', 'IPHONE-15'], 
         required: true,
         condition: { key: 'monitor_type', value: 'specific_items' }
-      },
-      { key: 'threshold', label: 'Minimum Stock Level', type: 'NUMBER', placeholder: '10', required: true }
+      }
     ]
   },
   {
@@ -512,9 +511,6 @@ if (route.params.id != "") {
             if (workflow.value.trigger.product_ids) {
                 workflow.value.trigger.properties.product_ids = workflow.value.trigger.product_ids
             }
-            if (workflow.value.trigger.threshold !== undefined) {
-                workflow.value.trigger.properties.threshold = workflow.value.trigger.threshold
-            }
         }
         
         for (let i = 0; i < workflow.value.actions.length; i++) {
@@ -606,9 +602,6 @@ const getPropertiesString = (props, definitionId) => {
         } else if (props.monitor_type === 'specific_items' && props.product_ids && props.product_ids.length > 0) {
             parts.push(`Specific items: ${props.product_ids.join(', ')}`);
         }
-        if (props.threshold !== undefined) {
-            parts.push(`threshold: ${props.threshold}`);
-        }
         return parts.length > 0 ? parts.join(' | ') : 'Not configured';
     }
     
@@ -694,8 +687,6 @@ const updateNodeProperty = (key, value) => {
                 workflow.value.trigger.monitor_type = value;
             } else if (key === 'product_ids') {
                 workflow.value.trigger.product_ids = value;
-            } else if (key === 'threshold') {
-                workflow.value.trigger.threshold = value;
             }
         }
     } else {
