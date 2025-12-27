@@ -436,9 +436,11 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 			return
 		}
 
+		low_stock_events := make([]events.EventLowStockData, 0)
+
 		for _, item := range items {
 			if item.Quantity <= item.Settings.AlertThreshold {
-				event_manager.Publish(events.EventLowStockId, events.EventLowStockData{
+				low_stock_events = append(low_stock_events, events.EventLowStockData{
 					TenantId:  tenant_id,
 					ItemID:    item.ID,
 					ItemName:  item.Name,
@@ -446,6 +448,10 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 					Current:   item.Quantity,
 				})
 			}
+		}
+
+		if len(low_stock_events) > 0 {
+			event_manager.Publish(events.EventLowStockId, low_stock_events)
 		}
 
 	}

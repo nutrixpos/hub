@@ -152,8 +152,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, getCurrentInstance } from 'vue';
 import * as LucideIcons from 'lucide-vue-next';
+import axios from 'axios';
+
+
+const { proxy } = getCurrentInstance();
 
 // ==========================================
 // STATE VARIABLES (Replaces Props)
@@ -163,25 +167,6 @@ const workflows = ref([
   {
     id: '1',
     name: 'Restock to n8n',
-    description: 'Triggers an n8n workflow when widget stock is low.',
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    trigger: {
-      id: 'node-1',
-      definitionId: 'trigger_low_stock',
-      properties: { monitor_type: 'Specific Items', product_ids: ['WIDGET-X'], threshold: 20 }
-    },
-    actions: [
-      {
-        id: 'node-2',
-        definitionId: 'action-n8n-webhook',
-        properties: { 
-            webhook_url: 'https://n8n.example.com/webhook/low-stock', 
-            method: 'POST', 
-            payload: '{"product": "WIDGET-X", "stock": 19}' 
-        }
-      }
-    ]
   }
 ]);
 
@@ -189,7 +174,6 @@ const allRuns = ref({
   '1': [
       {
           id: 'run-demo-1',
-          workflowId: '1',
           startTime: new Date(Date.now() - 3600000).toISOString(),
           endTime: new Date(Date.now() - 3595000).toISOString(),
           status: 'completed',
@@ -201,12 +185,54 @@ const allRuns = ref({
               { timestamp: new Date(Date.now() - 3595000).toISOString(), level: 'info', message: 'Workflow completed successfully.' }
           ]
       }
-  ]
+  ],
 });
 
 // ==========================================
 // LOGIC
 // ==========================================
+
+const getWorkflows = () => {
+   axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows`, {
+       headers: {
+           Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+       },
+   })
+   .then((response)=>{
+    // workflows.value = []
+
+    for (var i=0;i<response.data.data.length;i++){
+      workflows.value.push({
+        id: response.data.data[i].id,
+        name: response.data.data[i].name,
+      })
+
+      if (!allRuns.value[response.data.data[i].id]){
+        allRuns.value[response.data.data[i].id] = []
+      }
+
+      allRuns.value[response.data.data[i].id] = response.data.data[i].runs
+
+
+      for (var j=0;j<response.data.data[i].runs.length;j++){
+        allRuns.value[response.data.data[i].id].push({
+          id: response.data.data[i].runs[j],
+          startTime: response.data.data[i].runs[j].start_time,
+          endTime: response.data.data[i].runs[j].start_time,
+          status: response.data.data[i].runs[j].status,
+          logs: response.data.data[i].runs[j].logs,
+        })
+      }
+    }
+
+   })
+   .catch((err) => {
+       console.log(err)
+   });
+}
+
+getWorkflows();
+
 
 const searchTerm = ref('');
 const filterStatus = ref('all');

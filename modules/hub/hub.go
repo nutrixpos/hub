@@ -94,7 +94,7 @@ func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
 						Config: h.Config,
 						Logger: h.Logger,
 					}
-					err := ws.RunLowStockTriggeredWorkflows(low_stock_channel.(events.EventLowStockData))
+					err := ws.RunLowStockTriggeredWorkflows(low_stock_channel.([]events.EventLowStockData))
 					if err != nil {
 						h.Logger.Error(err.Error())
 					}
