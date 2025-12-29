@@ -256,15 +256,78 @@ func (ws *WorkflowsService) RunLowStockTriggeredWorkflows(events []events.EventL
 
 func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.WorkflowN8nWebhookAction, next_actions []bson.M, tenant_id string, workflow_id string, run_id string) error {
 
-	fmt.Println(input)
-
 	ws.AddLogsToWorkflowRun(models.WorkflowActionTypeN8nWebhookLabel, tenant_id, workflow_id, run_id, models.WorkflowRunLog{
 		Level:     "INFO",
 		Message:   "Running N8n action...",
 		TimeStamp: time.Now(),
 	})
 
+	time.Sleep(2 * time.Second)
+
 	if len(next_actions) == 0 {
+
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ws.Config.Databases[0].Host, ws.Config.Databases[0].Port))
+
+		db_connection_deadline := 5 * time.Second
+		if ws.Config.Env == "dev" {
+			db_connection_deadline = 1000 * time.Second
+		}
+
+		// Create a context with a timeout (optional)
+		ctx, cancel := context.WithTimeout(context.Background(), db_connection_deadline)
+		defer cancel()
+
+		// Connect to MongoDB
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			return err
+		}
+
+		// Ping the database to check connectivity
+		err = client.Ping(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		// Connected successfully
+
+		collection := client.Database(ws.Config.Databases[0].Database).Collection(ws.Config.Databases[0].Tables["sales"])
+
+		filter := bson.M{
+			"tenant_id":         tenant_id,
+			"workflows.id":      workflow_id,
+			"workflows.runs.id": run_id,
+		}
+
+		// Create the update to push log to the specific run
+		// We need to use array filters to target the correct nested elements
+		update := bson.M{
+			"$set": bson.M{
+				"workflows.$[workflow].runs.$[run].end_time": time.Now(),
+				"workflows.$[workflow].runs.$[run].status":   "completed",
+			},
+		}
+
+		arrayFilters := options.ArrayFilters{
+			Filters: []interface{}{
+				bson.M{"workflow.id": workflow_id},
+				bson.M{"run.id": run_id},
+			},
+		}
+
+		opts := options.Update().SetArrayFilters(arrayFilters)
+
+		// Execute the update
+		result, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			ws.Logger.Error(err.Error())
+			return err
+		}
+
+		if result.MatchedCount == 0 {
+			return mongo.ErrNoDocuments
+		}
+
 		ws.AddLogsToWorkflowRun(
 			models.WorkflowActionTypeN8nWebhookLabel,
 			tenant_id,

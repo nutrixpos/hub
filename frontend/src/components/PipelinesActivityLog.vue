@@ -135,7 +135,7 @@
 
               <div v-if="selectedRun.status === 'running'" class="!flex !items-center !gap-2 !text-gray-500 !mt-4 !pl-32 !animate-pulse">
                 <div class="!w-2 !h-2 !bg-green-500 !rounded-full"></div>
-                <span class="!text-xs">Live stream active...</span>
+                <span class="!text-xs">Running workflow ...</span>
               </div>
               <div class="!h-12"></div>
             </div>
@@ -211,14 +211,11 @@ const getWorkflows = () => {
         allRuns.value[response.data.data[i].id] = []
       }
 
-      allRuns.value[response.data.data[i].id] = response.data.data[i].runs
-
-
       for (var j=0;j<response.data.data[i].runs.length;j++){
         allRuns.value[response.data.data[i].id].push({
-          id: response.data.data[i].runs[j],
+          id: response.data.data[i].runs[j].id,
           startTime: response.data.data[i].runs[j].start_time,
-          endTime: response.data.data[i].runs[j].start_time,
+          endTime: response.data.data[i].runs[j].end_time,
           status: response.data.data[i].runs[j].status,
           logs: response.data.data[i].runs[j].logs,
         })
