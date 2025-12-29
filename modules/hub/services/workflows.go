@@ -262,8 +262,6 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 		TimeStamp: time.Now(),
 	})
 
-	time.Sleep(2 * time.Second)
-
 	if len(next_actions) == 0 {
 
 		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", ws.Config.Databases[0].Host, ws.Config.Databases[0].Port))

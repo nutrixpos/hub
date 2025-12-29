@@ -366,6 +366,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 		}
 
 		items := make([]models.InventoryItem, 0, len(request_body.Data))
+		oldQuantities := make(map[string]float64)
 
 		label = fmt.Sprintf("branch:%s", label)
 
@@ -400,6 +401,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 
 			if err == nil {
 				settings = existingInventoryItems.InventoryItems[existing_item_index].Settings
+				oldQuantities[item.ID] = existingInventoryItems.InventoryItems[existing_item_index].Quantity
 			}
 
 			items = append(items, models.InventoryItem{
@@ -439,7 +441,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manage
 		low_stock_events := make([]events.EventLowStockData, 0)
 
 		for _, item := range items {
-			if item.Quantity <= item.Settings.AlertThreshold {
+			if item.Quantity <= item.Settings.AlertThreshold && oldQuantities[item.ID] >= item.Settings.AlertThreshold {
 				low_stock_events = append(low_stock_events, events.EventLowStockData{
 					TenantId:  tenant_id,
 					ItemID:    item.ID,
