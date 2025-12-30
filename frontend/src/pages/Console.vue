@@ -148,7 +148,7 @@ const items = ref([
         label: 'Automation',
         items: [
             {
-                label: 'Secrets',
+                label: 'Secrets & Variables',
                 icon: 'pi pi-lock',
                 link: '/console/workflows/secrets',
             },

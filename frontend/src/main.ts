@@ -5,7 +5,7 @@ import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import ToastService from 'primevue/toastservice';
 import { createPinia } from 'pinia'
-import {  createWebHistory, createRouter } from 'vue-router'
+import { createWebHistory, createRouter } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import { definePreset } from '@primeuix/themes';
 import zitadelAuth from "@/services/zitadelAuth";
@@ -25,8 +25,8 @@ const secure_routes = [
         meta: {
             authName: zitadelAuth.oidcAuth.authName
         },
-        component: ()=>{
-            if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("cashier") ) {
+        component: () => {
+            if (zitadelAuth.hasRole("admin") || zitadelAuth.hasRole("cashier")) {
                 return import('@/pages/Console.vue')
             }
             return import('@/pages/NoAccessView.vue')
@@ -53,6 +53,10 @@ const secure_routes = [
                 component: () => import('@/pages/WorkflowsActivityLog.vue'),
             },
             {
+                path: 'workflows/secrets',
+                component: () => import('@/pages/Secrets.vue'),
+            },
+            {
                 path: 'workflows/put/:id?',
                 component: () => import('@/pages/WorkflowEditor.vue'),
             },
@@ -67,17 +71,17 @@ const secure_routes = [
         meta: {
             authName: zitadelAuth.oidcAuth.authName
         },
-        component: ()=>{
+        component: () => {
             return import('@/pages/Login.vue')
         },
     },
-  ]
+]
 
 
 const insecure_routes = [
     {
         path: '/', alias: ['/console'],
-        component: ()=>{
+        component: () => {
             return import('@/pages/Console.vue')
         },
         children: [
@@ -102,6 +106,10 @@ const insecure_routes = [
                 component: () => import('@/pages/WorkflowsActivityLog.vue'),
             },
             {
+                path: 'workflows/secrets',
+                component: () => import('@/pages/Secrets.vue'),
+            },
+            {
                 path: 'Workflows/put/:id?',
                 component: () => import('@/pages/WorkflowEditor.vue'),
             },
@@ -113,58 +121,58 @@ const insecure_routes = [
     },
     {
         path: '/login',
-        component: ()=>{
+        component: () => {
             return import('@/pages/Login.vue')
         },
     },
-  ]
+]
 
 
-  const i18n = createI18n({
+const i18n = createI18n({
     legacy: false,
     locale: 'en',
     fallbackLocale: 'en',
     messages: {
-      en: {
-        "cashier":"Cashier",
-        "kitchen":"Kitchen",
-        "admin":"Admin",
-        "inventory":"Inventory",
-        "product": "Product | Products",
-        "order":"Order | Orders",
-        "order_items":"Order Items",
-        "total":"Total",
-        "subtotal":"Subtotal",
-        "discount":"Discount",
-        "egp":"EGP",
-        "search":"Search",
-        "signout":"Signout",
-        "notifications":"Notifications",
-        "clear_all":"Clear All",
-        "stashed_orders":"Stashed Orders",
-        "chats":"Chats",
-        "messages":"Messages",
-        "write_message":"Write Message",
-        "paylater_orders":"Paylater Orders",
-        "checkout":"Checkout",
-        "category":"Category | Categories",
-        "add_component":"Add Component",
-        "name":"Name",
-        "quantity":"Quantity",
-        "unit":"Unit",
-        "status":"Status",
-        "actions":"Actions",
-        "history":"History",
-        "list":"List",
-        "report":"Report | Reports",
-        "settings":"Settings",
-        "language":"Language | Languages",
-        "sales":"Sales"
-      }
+        en: {
+            "cashier": "Cashier",
+            "kitchen": "Kitchen",
+            "admin": "Admin",
+            "inventory": "Inventory",
+            "product": "Product | Products",
+            "order": "Order | Orders",
+            "order_items": "Order Items",
+            "total": "Total",
+            "subtotal": "Subtotal",
+            "discount": "Discount",
+            "egp": "EGP",
+            "search": "Search",
+            "signout": "Signout",
+            "notifications": "Notifications",
+            "clear_all": "Clear All",
+            "stashed_orders": "Stashed Orders",
+            "chats": "Chats",
+            "messages": "Messages",
+            "write_message": "Write Message",
+            "paylater_orders": "Paylater Orders",
+            "checkout": "Checkout",
+            "category": "Category | Categories",
+            "add_component": "Add Component",
+            "name": "Name",
+            "quantity": "Quantity",
+            "unit": "Unit",
+            "status": "Status",
+            "actions": "Actions",
+            "history": "History",
+            "list": "List",
+            "report": "Report | Reports",
+            "settings": "Settings",
+            "language": "Language | Languages",
+            "sales": "Sales"
+        }
     }
-  })
+})
 
-  const preset = definePreset(Aura, {
+const preset = definePreset(Aura, {
     semantic: {
         primary: {
             50: '{zinc.50}',
@@ -210,62 +218,62 @@ const insecure_routes = [
             },
         }
     }
-  });
+});
 
-  const secureRouter = createRouter({
+const secureRouter = createRouter({
     history: createWebHistory(),
     routes: secure_routes,
-  })
-  
-  const insecureRouter = createRouter({
+})
+
+const insecureRouter = createRouter({
     history: createWebHistory(),
     routes: insecure_routes,
-  })
-  
+})
 
 
-  if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true'){
+
+if (import.meta.env.VITE_APP_ZITADEL_ENABLED === 'true') {
     zitadelAuth.oidcAuth.useRouter(secureRouter)
-  
+
     zitadelAuth.oidcAuth.startup().then(ok => {
-      if (ok) {
+        if (ok) {
             const app = createApp(App).use(createPinia())
             app.config.globalProperties.$zitadel = zitadelAuth
 
 
             app
-            .use(secureRouter)
-            .use(PrimeVue, {
-                theme: {
-                    preset: preset,
-                    options: {
-                        darkModeSelector: '.my-app-dark',
+                .use(secureRouter)
+                .use(PrimeVue, {
+                    theme: {
+                        preset: preset,
+                        options: {
+                            darkModeSelector: '.my-app-dark',
+                        }
                     }
-                }
-            })
-            .use(ToastService)
-            .use(ConfirmationService)
-            .use(i18n)
-            .mount('#app')
-      } else {
-          console.error('Zitadel startup was not ok')
-      }
-    })
-  } else {
-    const app = createApp(App).use(createPinia())
-  
-    app
-    .use(insecureRouter)
-    .use(PrimeVue, {
-        theme: {
-            preset: preset,
-            options: {
-                darkModeSelector: '.my-app-dark',
-            }
+                })
+                .use(ToastService)
+                .use(ConfirmationService)
+                .use(i18n)
+                .mount('#app')
+        } else {
+            console.error('Zitadel startup was not ok')
         }
     })
-    .use(ToastService)
-    .use(ConfirmationService)
-    .use(i18n)
-    .mount('#app')
-  }
+} else {
+    const app = createApp(App).use(createPinia())
+
+    app
+        .use(insecureRouter)
+        .use(PrimeVue, {
+            theme: {
+                preset: preset,
+                options: {
+                    darkModeSelector: '.my-app-dark',
+                }
+            }
+        })
+        .use(ToastService)
+        .use(ConfirmationService)
+        .use(i18n)
+        .mount('#app')
+}
