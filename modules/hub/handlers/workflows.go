@@ -21,6 +21,307 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func EnvVarPATCH(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant_id := "1"
+		label := "dev"
+
+		params := mux.Vars(r)
+		env_var := params["name"]
+
+		if env_var == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
+			}
+
+			decodedData, err := base64.StdEncoding.DecodeString(token)
+			if err != nil {
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var claims map[string]interface{}
+			err = json.Unmarshal(decodedData, &claims)
+			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var ok bool
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok || tenant_id == "" {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+
+			label = claims["name"].(string)
+			if label == "" {
+				http.Error(w, "name claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: name claim is required")
+				return
+			}
+		}
+
+		// Set up MongoDB connection
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+		defer client.Disconnect(ctx)
+		// Access the collection
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+
+		request := struct {
+			Data models.WorkflowEnvVar `json:"data"`
+		}{}
+
+		err = json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		filter := bson.M{
+			"tenant_id":     tenant_id,
+			"env_vars.name": request.Data.Name,
+		}
+		update := bson.M{}
+
+		count, err := collection.CountDocuments(ctx, filter)
+		if err != nil {
+			http.Error(w, "Failed to count documents", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		if count == 0 {
+			// Insert new env_var item if the item doesn't exist
+			filter = bson.M{"tenant_id": tenant_id}
+			update = bson.M{
+				"$push": bson.M{
+					"env_vars": bson.M{
+						"name":  request.Data.Name,
+						"value": request.Data.Value,
+					},
+				},
+			}
+		} else {
+			// Update existing env_var item if the item exists
+			update = bson.M{
+				"$set": bson.M{
+					"env_vars.$.value": request.Data.Value,
+				},
+			}
+		}
+
+		_, err = collection.UpdateOne(ctx, filter, update, options.Update())
+		if err != nil {
+			http.Error(w, "Failed to update environment variable", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+	}
+}
+
+func EnvVarsGet(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant_id := "1"
+		label := "dev"
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
+			}
+
+			decodedData, err := base64.StdEncoding.DecodeString(token)
+			if err != nil {
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var claims map[string]interface{}
+			err = json.Unmarshal(decodedData, &claims)
+			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var ok bool
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok || tenant_id == "" {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+
+			label = claims["name"].(string)
+			if label == "" {
+				http.Error(w, "name claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: name claim is required")
+				return
+			}
+		}
+
+		// Set up MongoDB connection
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+		defer client.Disconnect(ctx)
+		// Access the collection
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+
+		filter := bson.M{"tenant_id": tenant_id}
+		var result models.Tenant
+		err = collection.FindOne(ctx, filter).Decode(&result)
+		if err != nil {
+			http.Error(w, "Failed to find tenant", http.StatusNotFound)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		env_vars := make([]models.WorkflowEnvVar, len(result.EnvVars))
+		for i, env_var := range result.EnvVars {
+			env_vars[i] = env_var
+
+			if env_var.IsSecret {
+				env_vars[i].Value = "********"
+			}
+		}
+
+		response := core_handlers.JSONApiOkResponse{
+			Meta: core_handlers.JSONAPIMeta{
+				TotalRecords: len(env_vars),
+			},
+			Data: env_vars,
+		}
+
+		jsonResponse, err := json.Marshal(response)
+		if err != nil {
+			logger.Error(err.Error())
+			http.Error(w, "Failed to marshal environment variables response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResponse)
+
+	}
+}
+
+func EnvVarDelete(config config.Config, logger logger.ILogger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tenant_id := "1"
+		label := "dev"
+
+		if config.Env != "dev" {
+			token := r.Header.Get("X-Userinfo")
+			if token == "" {
+				http.Error(w, "X-Userinfo header is required", http.StatusBadRequest)
+				return
+			}
+
+			decodedData, err := base64.StdEncoding.DecodeString(token)
+			if err != nil {
+				http.Error(w, "Failed to decode token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var claims map[string]interface{}
+			err = json.Unmarshal(decodedData, &claims)
+			if err != nil {
+				http.Error(w, "Failed to unmarshal token", http.StatusBadRequest)
+				logger.Error(fmt.Sprintf("ERROR: %v", err))
+				return
+			}
+
+			var ok bool
+			tenant_id, ok = claims["tenant_id"].(string)
+			if !ok || tenant_id == "" {
+				http.Error(w, "tenant_id claim is required and must be a string", http.StatusBadRequest)
+				logger.Error("ERROR: tenant_id claim is required and must be a string")
+				return
+			}
+
+			label = claims["name"].(string)
+			if label == "" {
+				http.Error(w, "name claim is required", http.StatusBadRequest)
+				logger.Error("ERROR: name claim is required")
+				return
+			}
+		}
+
+		// Set up MongoDB connection
+		clientOptions := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%v", config.Databases[0].Host, config.Databases[0].Port))
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, clientOptions)
+		if err != nil {
+			http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+		defer client.Disconnect(ctx)
+		// Access the collection
+		collection := client.Database(config.Databases[0].Database).Collection(config.Databases[0].Tables["sales"])
+
+		filter := bson.M{"tenant_id": tenant_id}
+		var result models.Tenant
+		err = collection.FindOne(ctx, filter).Decode(&result)
+		if err != nil {
+			http.Error(w, "Failed to find tenant", http.StatusNotFound)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		params := mux.Vars(r)
+		env_var := params["name"]
+
+		if env_var == "" {
+			http.Error(w, "name is required", http.StatusBadRequest)
+			return
+		}
+		update := bson.M{"$pull": bson.M{"env_vars": bson.M{"name": env_var}}}
+		_, err = collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			http.Error(w, "Failed to delete environment variable", http.StatusInternalServerError)
+			logger.Error(fmt.Sprintf("ERROR: %v", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	}
+}
+
 func WorkflowGET(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

@@ -11,6 +11,12 @@ const (
 	TriggerLowStockMonitorTypeSpecific = "specific_items"
 )
 
+type WorkflowEnvVar struct {
+	Name     string `json:"name" bson:"name" mapstructure:"name"`
+	Value    string `json:"value" bson:"value" mapstructure:"value"`
+	IsSecret bool   `json:"is_secret" bson:"is_secret" mapstructure:"is_secret"`
+}
+
 type Workflow struct {
 	ID          string               `json:"id" bson:"id" mapstructure:"id"`
 	Name        string               `json:"name" bson:"name" mapstructure:"name"`

@@ -19,6 +19,7 @@ type Tenant struct {
 	InventoryItems []InventoryItem    `bson:"inventory_items" json:"inventory_items" mapstructure:"inventory_items"`
 	Subscription   TenantSubscription `bson:"subscription" json:"subscription" mapstructure:"subscription"`
 	Workflows      []interface{}      `json:"workflows" bson:"workflows" mapstructure:"workflows"`
+	EnvVars        []WorkflowEnvVar   `json:"env_vars" bson:"env_vars" mapstructure:"env_vars"`
 }
 
 type TenantAPIKey struct {
