@@ -118,9 +118,9 @@
                 <span 
                   class="!shrink-0 !font-bold !w-16 !text-xs !pt-0.5"
                   :class="{
-                    '!text-red-400': log.level === 'error',
+                    '!text-red-400': log.level === 'error' || log.level === 'ERROR',
                     '!text-yellow-400': log.level === 'warning',
-                    '!text-blue-400': log.level !== 'error' && log.level !== 'warning'
+                    '!text-blue-400': log.level !== 'error' && log.level !== 'ERROR' && log.level !== 'warning'
                   }"
                 >
                   {{ log.level.toUpperCase() }}

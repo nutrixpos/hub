@@ -72,8 +72,9 @@ type WorkflowLowStockTriggerOutputItem struct {
 
 type WorkflowN8nWebhookAction struct {
 	WorkflowActionBase `json:",inline" bson:",inline" mapstructure:",squash"`
-	Input              string `json:"input" bson:"input" mapstructure:"input"`
-	WebhookURL         string `json:"webhook_url" bson:"webhook_url" mapstructure:"webhook_url"`
-	Method             string `json:"method" bson:"method" mapstructure:"method"`
-	Output             string `json:"output" bson:"output" mapstructure:"output"`
+	Input              string            `json:"input" bson:"input" mapstructure:"input"`
+	WebhookURL         string            `json:"webhook_url" bson:"webhook_url" mapstructure:"webhook_url"`
+	Method             string            `json:"method" bson:"method" mapstructure:"method"`
+	Headers            map[string]string `json:"headers" bson:"headers" mapstructure:"headers"`
+	Output             string            `json:"output" bson:"output" mapstructure:"output"`
 }

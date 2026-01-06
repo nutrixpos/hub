@@ -116,8 +116,9 @@ func EnvVarPATCH(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			update = bson.M{
 				"$push": bson.M{
 					"env_vars": bson.M{
-						"name":  request.Data.Name,
-						"value": request.Data.Value,
+						"name":      request.Data.Name,
+						"value":     request.Data.Value,
+						"is_secret": request.Data.IsSecret,
 					},
 				},
 			}
@@ -811,6 +812,7 @@ func WorkflowPATCH(config config.Config, logger logger.ILogger) http.HandlerFunc
 		db_workflow["name"] = workflow.Name
 		db_workflow["description"] = workflow.Description
 		db_workflow["enabled"] = workflow.Enabled
+		db_workflow["runs"] = workflow.Runs
 
 		// Update existing workflow
 		filter := bson.M{

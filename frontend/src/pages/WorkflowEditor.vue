@@ -203,16 +203,6 @@
                       class="!border !border-gray-300 !rounded-md !px-3 !py-2 !text-sm focus:!outline-none focus:!ring-2 focus:!ring-[#001F3E] focus:!border-transparent !transition-all !w-full"
                     />
 
-                    <!-- Textarea -->
-                    <textarea 
-                      v-if="field.type === 'TEXTAREA'"
-                      :value="selectedNode.properties[field.key]"
-                      @input="updateNodeProperty(field.key, $event.target.value)"
-                      :placeholder="field.placeholder"
-                      rows="4"
-                      class="!border !border-gray-300 !rounded-md !px-3 !py-2 !text-sm focus:!outline-none focus:!ring-2 focus:!ring-[#001F3E] focus:!border-transparent !transition-all !resize-y !w-full"
-                    ></textarea>
-
                     <!-- Select -->
                     <select
                       v-if="field.type === 'SELECT'"
@@ -300,6 +290,42 @@
                         <span class="!ml-2 !text-sm !text-gray-600">{{ field.description || 'Enable' }}</span>
                     </div>
 
+                    <!-- Key Value List (Headers) -->
+                    <div v-if="field.type === 'KEY_VALUE_LIST'" class="!flex !flex-col !gap-2">
+                      <div v-for="(item, index) in (selectedNode.properties[field.key] || [])" :key="index" class="!flex !gap-2 !items-center grid">
+                          <div class="col-5">
+                            <input 
+                                type="text" 
+                                v-model="item.key" 
+                                @input="updateNodeProperty(field.key, selectedNode.properties[field.key])"
+                                placeholder="Key"
+                                class="!flex-1 !border !border-gray-300 !rounded-md !px-3 !py-2 !text-sm focus:!outline-none focus:!ring-2 focus:!ring-[#001F3E] focus:!border-transparent w-full"
+                            />
+                          </div>
+                          <div class="col-5">
+                            <input 
+                                type="text" 
+                                v-model="item.value" 
+                                @input="updateNodeProperty(field.key, selectedNode.properties[field.key])"
+                                placeholder="Value"
+                                class="!flex-1 !border !border-gray-300 !rounded-md !px-3 !py-2 !text-sm focus:!outline-none focus:!ring-2 focus:!ring-[#001F3E] focus:!border-transparent w-full"
+                            />
+                          </div>
+                          <div class="col-1">
+                              <button @click="removeKeyValue(field.key, index)" class="!text-gray-400 hover:!text-red-500 !p-1">
+                                  <component :is="getIcon('Trash2')" :size="16" />
+                              </button>
+                          </div>
+                      </div>
+                      <button 
+                          @click="addKeyValue(field.key)"
+                          class="!mt-1 !flex !items-center !gap-2 !text-sm !font-medium !text-[#001F3E] hover:!text-blue-700 !transition-colors"
+                      >
+                          <component :is="getIcon('Plus')" :size="14" />
+                          Add Header
+                      </button>
+                    </div>
+
                     <p v-if="field.description && field.type !== 'BOOLEAN'" class="!text-xs !text-gray-500">{{ field.description }}</p>
 
                  </div>
@@ -357,13 +383,15 @@ import { ref, computed, onMounted, onUnmounted,getCurrentInstance } from 'vue';
 import {Button} from 'primevue';
 import * as LucideIcons from 'lucide-vue-next';
 import axios from 'axios';
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from "primevue/usetoast";
 
 
 const toast = useToast()
 const {proxy} = getCurrentInstance()
 const route = useRoute()
+const router = useRouter()
+
 const loading_saving_workflow = ref(false);
 
 const definitionId = computed(() => {
@@ -427,7 +455,7 @@ const NODE_DEFINITIONS = ref([
     schema: [
       { key: 'webhook_url', label: 'Webhook URL', type: 'TEXT', placeholder: 'https://primary.n8n.cloud/webhook/...', required: true },
       { key: 'method', label: 'Method', type: 'SELECT', options: ['GET', 'POST'], required: true },
-      { key: 'payload', label: 'JSON Payload', type: 'TEXTAREA', placeholder: '{"key": "value"}', description: 'Data to send to the webhook.' }
+      { key: 'headers', label: 'Headers', type: 'KEY_VALUE_LIST', description: 'Add custom headers (e.g. Authorization)', required: false }
     ]
   }
 ]);
@@ -439,9 +467,17 @@ const saveWorkflow = () => {
     if (route.params.id == "") {
 
       workflow.value.trigger.type = workflow.value.trigger.definitionId
+      workflow.value.runs = workflow.value.runs || []
 
-      workflow.value.actions.forEach(action => {
+      workflow.value.actions.forEach((action, index) => {
         action.type = action.definitionId
+        if (action.definitionId == "action_n8n_webhook"){
+          var old_headers = workflow.value.actions[index].headers || []
+          workflow.value.actions[index].headers = {}
+          old_headers.forEach(header => {
+            workflow.value.actions[index].headers[Object.entries(header)[0][0]] = Object.entries(header)[0][1]
+          })
+        }
       })
 
       axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows`, {
@@ -461,6 +497,19 @@ const saveWorkflow = () => {
       })
 
     }else {
+
+      workflow.value.actions.forEach((action, index) => {
+        action.type = action.definitionId
+        if (action.definitionId == "action_n8n_webhook"){
+          var old_headers = workflow.value.actions[index].headers || []
+          workflow.value.actions[index].headers = {}
+          old_headers.forEach(header => {
+            workflow.value.actions[index].headers[Object.entries(header)[0][0]] = Object.entries(header)[0][1]
+          })
+        }
+      })
+
+
       axios.patch(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/workflows/${workflow.value.id}`, {
         data: workflow.value,
       }, {
@@ -471,10 +520,12 @@ const saveWorkflow = () => {
       .then(() => {
           loading_saving_workflow.value = false;
           toast.add({ severity: 'success', summary: 'Workflow Saved', detail: "Successfully saved workflow",group:'br',life:3000 });
+          router.push('/console/workflows');
       })
       .catch(() => {
           loading_saving_workflow.value = false;
           toast.add({ severity: 'error', summary: 'Error', detail: "Error saving workflow",group:'br',life:3000 });
+          router.push('/console/workflows');
       })
     }
 }
@@ -523,6 +574,18 @@ if (route.params.id != "") {
                 if (workflow.value.actions[i].type == 'action_n8n_webhook') {
                     workflow.value.actions[i].properties.webhook_url = workflow.value.actions[i].webhook_url
                     workflow.value.actions[i].properties.method = workflow.value.actions[i].method
+                    workflow.value.actions[i].properties.headers = []
+
+                    var old_headers = workflow.value.actions[i].headers
+                    workflow.value.actions[i].headers = []
+
+                    for (const [key, value] of Object.entries(old_headers)) {
+                        workflow.value.actions[i].properties.headers.push({
+                            key: key,
+                            value: value
+                        })
+                    }
+
                     // workflow.value.actions[i].properties.payload = workflow.value.actions[i].payload
                 }
             }
@@ -698,12 +761,31 @@ const updateNodeProperty = (key, value) => {
                     workflow.value.actions[actionIndex].webhook_url = value;
                 } else if (key === 'method') {
                     workflow.value.actions[actionIndex].method = value;
-                } else if (key === 'payload') {
-                    workflow.value.actions[actionIndex].payload = value;
+                } else if (key === 'headers') {
+                    workflow.value.actions[actionIndex].headers = value.map(header => {
+                        return {
+                            [header.key] : header.value
+                        };
+                    });
                 }
             }
         }
     }
+};
+
+const addKeyValue = (key) => {
+    if (!selectedNode.value.properties[key]) {
+        selectedNode.value.properties[key] = [];
+    }
+    selectedNode.value.properties[key].push({ key: '', value: '' });
+    updateNodeProperty(key, selectedNode.value.properties[key]);
+};
+
+const removeKeyValue = (propKey, index) => {
+     if (selectedNode.value.properties[propKey]) {
+        selectedNode.value.properties[propKey].splice(index, 1);
+        updateNodeProperty(propKey, selectedNode.value.properties[propKey]);
+     }
 };
 
 const checkCondition = (field, data) => {
