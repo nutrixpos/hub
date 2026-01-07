@@ -206,8 +206,28 @@ func (ws *WorkflowsService) RunLowStockTriggeredWorkflows(events []events.EventL
 				if err != nil {
 					ws.Logger.Error(err.Error())
 				}
+
+				for _, event := range events {
+					output.Items = append(output.Items, models.WorkflowLowStockTriggerOutputItem{
+						ItemID:   event.ItemID,
+						ItemName: event.ItemName,
+						Quantity: event.Current,
+					})
+				}
+
 			} else {
-				fmt.Printf("Specific items: %+v\n", trigger)
+				for _, event := range events {
+
+					for _, product_id := range trigger.ProductIDs {
+						if event.ItemID == product_id {
+							output.Items = append(output.Items, models.WorkflowLowStockTriggerOutputItem{
+								ItemID:   event.ItemID,
+								ItemName: event.ItemName,
+								Quantity: event.Current,
+							})
+						}
+					}
+				}
 			}
 		}
 
@@ -364,6 +384,10 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 				secrets_map[env_var.Name] = env_var.Value
 			}
 		}
+		secrets_values := make([]string, 0)
+		for _, env_var := range secrets_map {
+			secrets_values = append(secrets_values, fmt.Sprintf("%s", env_var))
+		}
 
 		webhook_url_processed, err := common.InterpretVars(webhook_url_preprocessed, secrets_map)
 		if err != nil {
@@ -416,19 +440,27 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 		url := webhook_url_processed
 		http_req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 		if err != nil {
-
-			secrets := make([]string, 0)
-			for _, env_var := range secrets_map {
-				secrets = append(secrets, fmt.Sprintf("%s", env_var))
-			}
-
-			fmt.Println("Error creating request: %s", common.MaskString(err.Error(), secrets))
+			fmt.Println("Error creating request: %s", common.MaskString(err.Error(), secrets_values))
 			return err
 		}
 
 		// Set headers
 		http_req.Header.Set("Content-Type", "application/json")
 		http_req.Header.Set("User-Agent", "Go-HTTP-Client")
+
+		for key, value := range action.Headers {
+
+			k, err := common.InterpretVars(key, secrets_map)
+			if err != nil {
+				return fmt.Errorf("Couldn't interpret env var %s", common.MaskString(key, secrets_values))
+			}
+			v, err := common.InterpretVars(value, secrets_map)
+			if err != nil {
+				return fmt.Errorf("Couldn't interpret env var %s", common.MaskString(value, secrets_values))
+			}
+
+			http_req.Header.Set(k, v)
+		}
 
 		// Create HTTP client with timeout
 		http_client := &http.Client{
@@ -438,14 +470,8 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 		// Send request
 		http_resp, err := http_client.Do(http_req)
 		if err != nil {
-
-			secrets := make([]string, 0)
-			for _, env_var := range secrets_map {
-				secrets = append(secrets, fmt.Sprintf("%s", env_var))
-			}
-
-			fmt.Println("Error sending request: %s", common.MaskString(err.Error(), secrets))
-			return fmt.Errorf("Error sending request: %s", common.MaskString(err.Error(), secrets))
+			fmt.Println("Error sending request: %s", common.MaskString(err.Error(), secrets_values))
+			return fmt.Errorf("Error sending request: %s", common.MaskString(err.Error(), secrets_values))
 		}
 		defer http_resp.Body.Close()
 
