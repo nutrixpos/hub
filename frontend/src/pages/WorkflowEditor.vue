@@ -455,7 +455,8 @@ const NODE_DEFINITIONS = ref([
     schema: [
       { key: 'webhook_url', label: 'Webhook URL', type: 'TEXT', placeholder: 'https://primary.n8n.cloud/webhook/...', required: true },
       { key: 'method', label: 'Method', type: 'SELECT', options: ['GET', 'POST'], required: true },
-      { key: 'headers', label: 'Headers', type: 'KEY_VALUE_LIST', description: 'Add custom headers (e.g. Authorization)', required: false }
+      { key: 'headers', label: 'Headers', type: 'KEY_VALUE_LIST', description: 'Add custom headers (e.g. Authorization)', required: false },
+      { key: 'timeout', label: 'Timeout (seconds)', type: 'NUMBER', placeholder: '10', description: 'Request timeout in seconds (default 10)', required: false }
     ]
   }
 ]);
@@ -574,6 +575,7 @@ if (route.params.id != "") {
                 if (workflow.value.actions[i].type == 'action_n8n_webhook') {
                     workflow.value.actions[i].properties.webhook_url = workflow.value.actions[i].webhook_url
                     workflow.value.actions[i].properties.method = workflow.value.actions[i].method
+                    workflow.value.actions[i].properties.timeout = workflow.value.actions[i].timeout
                     workflow.value.actions[i].properties.headers = []
 
                     var old_headers = workflow.value.actions[i].headers
@@ -761,6 +763,8 @@ const updateNodeProperty = (key, value) => {
                     workflow.value.actions[actionIndex].webhook_url = value;
                 } else if (key === 'method') {
                     workflow.value.actions[actionIndex].method = value;
+                } else if (key === 'timeout') {
+                    workflow.value.actions[actionIndex].timeout = value;
                 } else if (key === 'headers') {
                     workflow.value.actions[actionIndex].headers = value.map(header => {
                         return {

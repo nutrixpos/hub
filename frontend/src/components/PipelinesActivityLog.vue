@@ -163,30 +163,9 @@ const { proxy } = getCurrentInstance();
 // STATE VARIABLES (Replaces Props)
 // ==========================================
 
-const workflows = ref([
-  {
-    id: '1',
-    name: 'Restock to n8n',
-  }
-]);
+const workflows = ref([]);
 
-const allRuns = ref({
-  '1': [
-      {
-          id: 'run-demo-1',
-          startTime: new Date(Date.now() - 3600000).toISOString(),
-          endTime: new Date(Date.now() - 3595000).toISOString(),
-          status: 'completed',
-          logs: [
-              { timestamp: new Date(Date.now() - 3600000).toISOString(), level: 'info', message: 'Workflow execution started.' },
-              { timestamp: new Date(Date.now() - 3599000).toISOString(), level: 'info', message: 'Checking stock levels for configured items.' },
-              { timestamp: new Date(Date.now() - 3598000).toISOString(), level: 'warning', message: 'Item WIDGET-X is low on stock (Count: 4).' },
-              { timestamp: new Date(Date.now() - 3597000).toISOString(), level: 'info', message: 'Executing action: n8n Webhook.' },
-              { timestamp: new Date(Date.now() - 3595000).toISOString(), level: 'info', message: 'Workflow completed successfully.' }
-          ]
-      }
-  ],
-});
+const allRuns = ref({});
 
 // ==========================================
 // LOGIC

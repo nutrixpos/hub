@@ -76,5 +76,6 @@ type WorkflowN8nWebhookAction struct {
 	WebhookURL         string            `json:"webhook_url" bson:"webhook_url" mapstructure:"webhook_url"`
 	Method             string            `json:"method" bson:"method" mapstructure:"method"`
 	Headers            map[string]string `json:"headers" bson:"headers" mapstructure:"headers"`
+	Timeout            int               `json:"timeout" bson:"timeout" mapstructure:"timeout"`
 	Output             string            `json:"output" bson:"output" mapstructure:"output"`
 }

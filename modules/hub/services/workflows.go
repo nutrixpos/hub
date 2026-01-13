@@ -400,36 +400,6 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 			"workflows.runs.id": run_id,
 		}
 
-		// Create the update to push log to the specific run
-		// We need to use array filters to target the correct nested elements
-		update := bson.M{
-			"$set": bson.M{
-				"workflows.$[workflow].runs.$[run].end_time": time.Now(),
-				"workflows.$[workflow].runs.$[run].status":   "completed",
-			},
-		}
-
-		arrayFilters := options.ArrayFilters{
-			Filters: []interface{}{
-				bson.M{"workflow.id": workflow_id},
-				bson.M{"run.id": run_id},
-			},
-		}
-
-		opts := options.Update().SetArrayFilters(arrayFilters)
-
-		// Execute the update
-		result, err := collection.UpdateOne(context.Background(), filter, update, opts)
-		if err != nil {
-			ws.Logger.Error(err.Error())
-			return err
-		}
-
-		if result.MatchedCount == 0 {
-			return mongo.ErrNoDocuments
-		}
-
-		// Send a POST request to the webhook URL with the input
 		jsonData, err := json.Marshal(input)
 		if err != nil {
 			fmt.Println("Error marshaling JSON:", err)
@@ -463,8 +433,12 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 		}
 
 		// Create HTTP client with timeout
+		timeout := 10
+		if action.Timeout > 0 {
+			timeout = action.Timeout
+		}
 		http_client := &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: time.Duration(timeout) * time.Second,
 		}
 
 		// Send request
@@ -502,6 +476,35 @@ func (ws *WorkflowsService) RunN8nAction(input interface{}, action models.Workfl
 		}
 
 		// POST request finished
+		// We need to use array filters to target the correct nested elements
+		update := bson.M{
+			"$set": bson.M{
+				"workflows.$[workflow].runs.$[run].end_time": time.Now(),
+				"workflows.$[workflow].runs.$[run].status":   "completed",
+			},
+		}
+
+		arrayFilters := options.ArrayFilters{
+			Filters: []interface{}{
+				bson.M{"workflow.id": workflow_id},
+				bson.M{"run.id": run_id},
+			},
+		}
+
+		opts := options.Update().SetArrayFilters(arrayFilters)
+
+		// Execute the update
+		result, err := collection.UpdateOne(context.Background(), filter, update, opts)
+		if err != nil {
+			ws.Logger.Error(err.Error())
+			return err
+		}
+
+		if result.MatchedCount == 0 {
+			return mongo.ErrNoDocuments
+		}
+
+		// Send a POST request to the webhook URL with the input
 
 		ws.AddLogsToWorkflowRun(
 			models.WorkflowActionTypeN8nWebhookLabel,
