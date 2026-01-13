@@ -32,7 +32,7 @@
                         <div class="flex flex-column gap-1" style="max-width: 80%;">
                             <span class="font-bold text-sm">Koptan</span>
                             <div class="p-3 border-round-2xl surface-card shadow-1 line-height-3">
-                                Hello! I'm Koptan, your AI assistant. Here are some suggestions based on your recent activity:
+                                Hello! I'm Koptan, your AI assistant. Here are some suggestions based on your recent sales:
                             </div>
                         </div>
                     </div>
@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import {getCurrentInstance, ref, onMounted} from 'vue'
+import {getCurrentInstance, ref, onMounted, watch} from 'vue'
 import axios from 'axios'
 import { globalStore } from '../stores';
 import Avatar from 'primevue/avatar';
@@ -110,11 +110,19 @@ const loadSuggestions = () => {
     })
 }
 
-onMounted(() => {
-    if (store.subscription.subscription_plan == 'gold') {
+
+if (store.subscription.subscription_plan == 'gold') {
+    loadSuggestions()
+}
+
+watch(
+  () => store.subscription,
+  (newValue, _) => {
+    if (newValue.subscription_plan == 'gold') {
         loadSuggestions()
     }
-})
+  }
+)
 
 </script>
 
