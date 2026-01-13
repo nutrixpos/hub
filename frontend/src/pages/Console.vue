@@ -55,7 +55,7 @@
 
 
                     </div>
-                    <div class="col-9 xl:col-10 flex p-0 pt-3" style="background-color: white;background-color: var(--p-gray-100);">
+                    <div class="col-9 xl:col-10 flex p-0" style="background-color: white;background-color: var(--p-gray-100);">
                         <RouterView />
                     </div>
                 </div>
@@ -141,6 +141,26 @@ const items = ref([
                 label: 'Insights',
                 icon: 'pi pi-lightbulb',
                 link: '/console/koptan',
+            },
+        ]
+    },
+    {
+        label: 'Automation',
+        items: [
+            {
+                label: 'Secrets & Variables',
+                icon: 'pi pi-lock',
+                link: '/console/workflows/secrets',
+            },
+            {
+                label: 'Workflows',
+                icon: 'fa fa-rocket',
+                link: '/console/workflows',
+            },
+            {
+                label: 'Activity Logs',
+                icon: 'fa fa-history',
+                link: '/console/workflows/logs',
             },
         ]
     },

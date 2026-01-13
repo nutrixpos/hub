@@ -3,8 +3,14 @@
         <div class="grid mx-2">
             <div class="col-12 flex">
                 <div class="gird w-full">
-                    <div class="col-12">
-                        <h3 style="font-size:2rem">{{$t('sales')}}</h3>
+                    <div class="col-12 flex w-full justify-content-between align-items-center">
+                        <div>
+                            <h3 style="font-size:2rem" class="font-bold">{{$t('sales')}}</h3>
+                            <p>Observe how your branches perform</p>
+                        </div>
+                        <div class="flex px-8 mx-8">
+                            <Button label="New workflow" icon="pi pi-plus" @click="$router.push('/console/workflows/put')" />
+                        </div>
                     </div>
                     <div class="col-12 flex justify-content-center align-items-center w-full">
                         <div class="flex flex-column w-full">

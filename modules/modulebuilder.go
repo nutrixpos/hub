@@ -9,6 +9,7 @@ package modules
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/pos/common/logger"
 	"github.com/nutrixpos/pos/common/userio"
 )
@@ -19,10 +20,11 @@ type ModuleBuilder struct {
 	Prompter                    userio.Prompter
 	module                      IBaseModule
 	module_name                 string
-	workers                     []Worker
 	isRegisterHttpHandlers      bool
 	isRegisterBackgroundWorkers bool
+	isRegisterEventManager      bool
 	httpRouter                  *mux.Router
+	eventManager                common.EventManager
 }
 
 // RegisterHttpHandlers registers HTTP handlers for the module.
@@ -38,6 +40,15 @@ func (builder *ModuleBuilder) RegisterHttpHandlers(router *mux.Router) *ModuleBu
 func (builder *ModuleBuilder) RegisterBackgroundWorkers() *ModuleBuilder {
 
 	builder.isRegisterBackgroundWorkers = true
+
+	return builder
+}
+
+// RegisterEventManager enables registering event bus for the module.
+func (builder *ModuleBuilder) RegisterEventManager(manager common.EventManager) *ModuleBuilder {
+
+	builder.isRegisterEventManager = true
+	builder.eventManager = manager
 
 	return builder
 }

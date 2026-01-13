@@ -4,9 +4,8 @@
 package modules
 
 import (
-	"time"
-
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common"
 )
 
 // saved_module_builders is a map of module builders that have been saved.
@@ -16,6 +15,8 @@ var saved_module_builders = make(map[string]*ModuleBuilder)
 // IBaseModule is the interface that all modules must implement.
 // It provides methods for starting and stopping the module.
 type IBaseModule interface {
+	SetName(string) error
+	GetName() string
 	// OnStart is called when the module is started.
 	OnStart() func() error
 	// OnEnd is called when the module is stopped.
@@ -26,8 +27,7 @@ type IBaseModule interface {
 // Interval is the duration between each run of the task.
 // Task is the function that is called every Interval.
 type Worker struct {
-	Interval time.Duration
-	Task     func()
+	Task func()
 }
 
 // IHttpModule is an interface that modules can implement to add HTTP handlers.
@@ -40,6 +40,12 @@ type IHttpModule interface {
 // RegisterBackgroundWorkers is called by the app manager to register the background workers.
 type IBackgroundWorkerModule interface {
 	RegisterBackgroundWorkers() []Worker
+}
+
+// IEventHandlerModule is an interface that modules can implement to add event handlers.
+// RegisterEventChannels is called by the app manager to subscribe channels to reveive dynamic events.
+type IEventHandlerModule interface {
+	RegisterEventManager(common.EventManager) error
 }
 
 // ISeederModule is an interface that modules can implement to add seeders.

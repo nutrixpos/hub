@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules/hub/events"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
@@ -117,6 +119,11 @@ func InventoryItemsPatch(config config.Config, logger logger.ILogger) http.Handl
 		}
 
 		existing_item_index, err := getInventoryItemById(request.Meta.Id, existing.InventoryItems)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		new_items := existing.InventoryItems
 
 		for key, value := range request.Data {
@@ -226,11 +233,16 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 		total_records := 0
 
 		if len(result) > 0 {
+			if result[0].InventoryItems == nil {
+				result[0].InventoryItems = make([]models.InventoryItem, 0)
+			}
 
 			total_records = len(result[0].InventoryItems)
 
 			if result[0].Subscription.SubscriptionPlan == "free" {
-				inventoryItems = append(inventoryItems, result[0].InventoryItems[0])
+				if len(result[0].InventoryItems) > 0 {
+					inventoryItems = append(inventoryItems, result[0].InventoryItems[0])
+				}
 			} else {
 				inventoryItems = result[0].InventoryItems
 			}
@@ -255,7 +267,7 @@ func InventoryItemsGet(config config.Config, logger logger.ILogger) http.Handler
 	}
 }
 
-func InventoryItemsPut(config config.Config, logger logger.ILogger) http.HandlerFunc {
+func InventoryItemsPut(config config.Config, logger logger.ILogger, event_manager common.EventManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		tenant_id := "1"
@@ -354,6 +366,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 		}
 
 		items := make([]models.InventoryItem, 0, len(request_body.Data))
+		oldQuantities := make(map[string]float64)
 
 		label = fmt.Sprintf("branch:%s", label)
 
@@ -388,6 +401,7 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 
 			if err == nil {
 				settings = existingInventoryItems.InventoryItems[existing_item_index].Settings
+				oldQuantities[item.ID] = existingInventoryItems.InventoryItems[existing_item_index].Quantity
 			}
 
 			items = append(items, models.InventoryItem{
@@ -422,6 +436,24 @@ func InventoryItemsPut(config config.Config, logger logger.ILogger) http.Handler
 			http.Error(w, "Failed to append items to the inventory_items property", http.StatusInternalServerError)
 			logger.Error(fmt.Sprintf("ERROR: %v", err))
 			return
+		}
+
+		low_stock_events := make([]events.EventLowStockData, 0)
+
+		for _, item := range items {
+			if item.Quantity <= item.Settings.AlertThreshold && oldQuantities[item.ID] > item.Settings.AlertThreshold {
+				low_stock_events = append(low_stock_events, events.EventLowStockData{
+					TenantId:  tenant_id,
+					ItemID:    item.ID,
+					ItemName:  item.Name,
+					Threshold: item.Settings.AlertThreshold,
+					Current:   item.Quantity,
+				})
+			}
+		}
+
+		if len(low_stock_events) > 0 {
+			event_manager.Publish(events.EventLowStockId, low_stock_events)
 		}
 
 	}

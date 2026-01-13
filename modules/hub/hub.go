@@ -2,7 +2,10 @@ package hub
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
+	"github.com/nutrixpos/hub/modules"
+	"github.com/nutrixpos/hub/modules/hub/events"
 	"github.com/nutrixpos/hub/modules/hub/handlers"
 	"github.com/nutrixpos/hub/modules/hub/models"
 	"github.com/nutrixpos/hub/modules/hub/services"
@@ -11,9 +14,21 @@ import (
 )
 
 type HubModule struct {
-	Config   config.Config
-	Logger   logger.ILogger
-	Settings models.Settings
+	Name          string
+	Config        config.Config
+	Logger        logger.ILogger
+	Settings      models.Settings
+	EventManager  common.EventManager
+	EventChannels map[string][]common.EventChannel
+}
+
+func (h *HubModule) SetName(name string) error {
+	h.Name = name
+	return nil
+}
+
+func (h *HubModule) GetName() string {
+	return h.Name
 }
 
 // OnStart is called when the core module is started.
@@ -31,16 +46,22 @@ func (h *HubModule) OnStart() func() error {
 // OnEnd is called when the core module is ended.
 func (h *HubModule) OnEnd() func() {
 	return func() {
-
 	}
 }
 
 func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/logs", pos_middlewares.AllowCors(handlers.LogsPost(h.Config, h.Logger))).Methods("POST", "OPTIONS")
-	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger))).Methods("PUT", "OPTIONS")
+	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPut(h.Config, h.Logger, h.EventManager))).Methods("PUT", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsGet(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/inventories", pos_middlewares.AllowCors(handlers.InventoryItemsPatch(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
 	router.Handle("/v1/api/sales", pos_middlewares.AllowCors(handlers.GetSalesPerDay(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/workflows", pos_middlewares.AllowCors(handlers.WorkflowsGET(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/workflows/{id}", pos_middlewares.AllowCors(handlers.WorkflowGET(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/workflows", pos_middlewares.AllowCors(handlers.WorkflowPOST(h.Config, h.Logger))).Methods("POST", "OPTIONS")
+	router.Handle("/v1/api/workflows/{id}", pos_middlewares.AllowCors(handlers.WorkflowPATCH(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
+	router.Handle("/v1/api/env_vars", pos_middlewares.AllowCors(handlers.EnvVarsGet(h.Config, h.Logger))).Methods("GET", "OPTIONS")
+	router.Handle("/v1/api/env_vars/{name}", pos_middlewares.AllowCors(handlers.EnvVarPATCH(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
+	router.Handle("/v1/api/env_vars/{name}", pos_middlewares.AllowCors(handlers.EnvVarDelete(h.Config, h.Logger))).Methods("DELETE", "OPTIONS")
 	router.Handle("/v1/api/languages", pos_middlewares.AllowCors(handlers.GetAvailableLanguages(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/languages/{code}", pos_middlewares.AllowCors(handlers.GetLanguage(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.GetSettings(h.Config, h.Logger))).Methods("GET", "OPTIONS")
@@ -50,6 +71,40 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/subscriptions/request", pos_middlewares.AllowCors(handlers.SubcriptionRequest(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/payment_callback", pos_middlewares.AllowCors(handlers.PaymobSubscribeCallbackPOST(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/request_cancellation", pos_middlewares.AllowCors(handlers.SubscriptionRequestCancellation(h.Config, h.Logger))).Methods("POST", "OPTIONS")
+}
+
+func (h *HubModule) RegisterEventManager(manager common.EventManager) error {
+
+	h.EventManager = manager
+	eventChannel, err := manager.Subscribe(events.EventLowStockId)
+	if err != nil {
+		h.Logger.Error(err.Error())
+		return err
+	}
+	h.EventChannels = make(map[string][]common.EventChannel)
+	h.EventChannels[events.EventLowStockId] = append(h.EventChannels[events.EventLowStockId], eventChannel)
+
+	return nil
+}
+
+func (h *HubModule) RegisterBackgroundWorkers() []modules.Worker {
+	return []modules.Worker{
+		{
+			Task: func() {
+				for low_stock_channel := range h.EventChannels[events.EventLowStockId][0].Channel {
+
+					ws := services.WorkflowsService{
+						Config: h.Config,
+						Logger: h.Logger,
+					}
+					err := ws.RunLowStockTriggeredWorkflows(low_stock_channel.([]events.EventLowStockData))
+					if err != nil {
+						h.Logger.Error(err.Error())
+					}
+				}
+			},
+		},
+	}
 }
 
 func (h *HubModule) EnsureSeeded() error {

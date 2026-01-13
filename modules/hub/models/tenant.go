@@ -13,11 +13,13 @@ type TenantSubscription struct {
 }
 
 type Tenant struct {
-	ID             string             `json:"id" bson:"id"`
-	TenantID       string             `bson:"tenant_id"`
-	Sales          []SalesPerDay      `bson:"sales"`
-	InventoryItems []InventoryItem    `bson:"inventory_items"`
-	Subscription   TenantSubscription `bson:"subscription"`
+	ID             string             `json:"id" bson:"id" mapstructure:"id"`
+	TenantID       string             `bson:"tenant_id" json:"tenant_id" mapstructure:"tenant_id"`
+	Sales          []SalesPerDay      `bson:"sales" json:"sales" mapstructure:"sales"`
+	InventoryItems []InventoryItem    `bson:"inventory_items" json:"inventory_items" mapstructure:"inventory_items"`
+	Subscription   TenantSubscription `bson:"subscription" json:"subscription" mapstructure:"subscription"`
+	Workflows      []interface{}      `json:"workflows" bson:"workflows" mapstructure:"workflows"`
+	EnvVars        []WorkflowEnvVar   `json:"env_vars" bson:"env_vars" mapstructure:"env_vars"`
 }
 
 type TenantAPIKey struct {

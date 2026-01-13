@@ -53,7 +53,9 @@ func GetLanguage(config config.Config, logger logger.ILogger) http.HandlerFunc {
 // GetAvailableLanguages reads available language files in the /assets/languages folder
 // it reads the language code and name from the file and returns json response of available installed langs
 func GetAvailableLanguages(config config.Config, logger logger.ILogger) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		availableLanguages := []struct {
 			Language string `json:"language"`
 			Code     string `json:"code"`

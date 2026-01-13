@@ -8,6 +8,7 @@ package modules
 import (
 	"fmt"
 
+	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/pos/common/customerrors"
 	"github.com/nutrixpos/pos/common/logger"
 )
@@ -22,7 +23,8 @@ type AppManager struct {
 	// and the value is the module itself.
 	Modules map[string]IBaseModule
 	// Logger is a logger.ILogger, which is used to log messages.
-	Logger logger.ILogger
+	Logger   logger.ILogger
+	EventBus common.EventManager
 }
 
 // Run starts all saved module builders by igniting each module.
@@ -41,6 +43,8 @@ func (manager *AppManager) LoadModule(module IBaseModule, module_name string) *M
 	builder := &ModuleBuilder{
 		Logger: manager.Logger,
 	}
+
+	module.SetName(module_name)
 
 	builder.module = module
 	builder.module_name = module_name
@@ -67,6 +71,18 @@ func (manager *AppManager) RunModule(name string, logger logger.ILogger, module_
 	err := module_builder.module.OnStart()()
 	if err != nil {
 		panic(err)
+	}
+
+	if module_builder.isRegisterEventManager {
+		if m, ok := module_builder.module.(IEventHandlerModule); ok {
+			err = m.RegisterEventManager(module_builder.eventManager)
+			if err != nil {
+				return err
+			}
+
+		} else {
+			logger.Error(customerrors.ErrTypeAssersionFailed.Error())
+		}
 	}
 
 	if module_builder.isRegisterHttpHandlers {
