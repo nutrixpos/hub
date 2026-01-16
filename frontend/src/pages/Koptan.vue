@@ -98,6 +98,35 @@ const userInput = ref('')
 const {proxy} = getCurrentInstance()
 const store = globalStore()
 
+
+const sendChat = (content: string) => {
+    // Placeholder for sending chat to backend and receiving response
+    // You can implement the logic to send userInput to the backend and get Koptan's response
+    is_loading.value = true
+
+    axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/koptan/chat`, {
+        data: content
+    }, {
+        headers: {
+            Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
+        }
+    })
+    .then(response => {
+        const koptanResponse = response.data.data
+
+        chats.value.push({
+            content: koptanResponse,
+            source: "Koptan"
+        })
+
+        is_loading.value = false
+        userInput.value = ''
+    })
+    .catch(() => {
+        is_loading.value = false
+    })
+}
+
 const loadSuggestions = () => {
     is_loading.value = true
     axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/koptan/suggestions?page[number]=${pageNumber.value}&page[size]=${pageSize.value}`, {
@@ -131,6 +160,8 @@ const addUserChat = (content:string) => {
         content: content,
         source: "You"
     })
+
+    sendChat(content)
 }
 
 
