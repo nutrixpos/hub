@@ -37,36 +37,35 @@
                         </div>
                     </div>
 
-                    <!-- Suggestions rendered as Messages -->
-                    <div v-if="isSuggestionsTableLoading" class="flex gap-3">
-                        <Avatar icon="pi pi-sparkles" shape="circle" class="bg-primary-50 text-primary" />
-                        <div class="flex align-items-center p-3">
-                             <i class="pi pi-spin pi-spinner"></i>
-                        </div>
-                    </div>
-
-                    <template v-else>
-                        <div v-for="(suggestion, index) in suggestions" :key="index" class="flex gap-3 fadein animation-duration-500">
-                            <Avatar icon="pi pi-sparkles" shape="circle" class="bg-primary-50 text-primary" />
-                            <div class="flex flex-column gap-1" style="max-width: 80%;">
-                                <span class="font-bold text-sm">Koptan</span>
-                                <div class="p-3 border-round-2xl surface-card shadow-1 line-height-3">
-                                    <div class="font-medium mb-1 text-primary-600 text-xs uppercase" v-if="suggestion.type">{{ suggestion.type }}</div>
-                                    {{ suggestion.content }}
-                                </div>
+                    <div v-for="(chat, index) in chats" :key="index" class="flex gap-3 fadein animation-duration-500">
+                        <Avatar icon="pi pi-sparkles" shape="circle" v-if="chat.source != 'You'" class="`bg-primary-50 text-primary" />
+                        <div :class="`flex flex-column gap-1 ${chat.source == 'Koptan' ? '' : 'ml-auto'}`" style="max-width: 80%;">
+                            <span class="font-bold text-sm" v-if="chat.source != 'You'">{{chat.source}}</span>
+                            <div class="p-3 border-round-2xl surface-card shadow-1 line-height-3">
+                                <div class="font-medium mb-1 text-primary-600 text-xs uppercase" v-if="chat.type">{{ chat.type }}</div>
+                                {{ chat.content }}
                             </div>
                         </div>
-                    </template>
+                    </div>
+
+                    <div v-if="is_loading" class="flex gap-3">
+                        <Avatar icon="pi pi-sparkles" shape="circle" class="bg-primary-50 text-primary" />
+                        <div class="flex align-items-center p-3">
+                             <ProgressSpinner style="width:1.5rem; height: 1.5rem;"/>
+                        </div>
+                    </div>
+                    
                 </div>
 
-                <!-- Input Area (Visual Only) -->
-                 <div class="p-4 surface-card border-top-1 surface-border">
-                    <div class="flex gap-2 max-w-4 xl mx-auto w-full relative">
-                        <InputText placeholder="Reply to Koptan..." class="w-full border-round-3xl p-3 pr-6" />
-                        <Button icon="pi pi-send" rounded text class="absolute right-0 top-0 mt-2 mr-2 text-color-secondary" />
-                    </div>
-                    <div class="text-center mt-2 text-xs text-color-secondary">
-                        Koptan may display inaccurate info, including about people, so double-check its responses.
+                <!-- Input Area -->
+                <div class="px-4 mb-6 pb-4 pt-2">
+                    <div class="flex flex-column align-items-center w-full">
+                        <div class="w-full relative shadow-1 border-round-3xl surface-100" style="max-width: 800px;">
+                             <InputText placeholder="Reply to Koptan..." class="w-full border-none py-3 pl-4 pr-6 text-lg shadow-none outline-none" v-model="userInput" style="border-radius: inherit;" />
+                             <div class="absolute right-0 top-0 h-full flex align-items-center pr-2">
+                                <Button icon="pi pi-send" rounded text class="text-color-secondary hover:text-primary transition-colors" @click="addUserChat(userInput)" :loading="is_loading"/>
+                             </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -82,20 +81,25 @@ import Avatar from 'primevue/avatar';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import ProgressSpinner from 'primevue/progressspinner';
+
+const chats = ref<any[]>([])
 
 const suggestions = ref([])
-const isSuggestionsTableLoading = ref(true)
+const is_loading = ref(true)
 
 // Keep pagination logic implicitly for fetching, or just fetch a clean batch
 // Since it's a chat flow, maybe we just load the first batch for now.
 const pageNumber = ref(1)
 const pageSize = ref(10) 
 
+const userInput = ref('')
+
 const {proxy} = getCurrentInstance()
 const store = globalStore()
 
 const loadSuggestions = () => {
-    isSuggestionsTableLoading.value = true
+    is_loading.value = true
     axios.get(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/koptan/suggestions?page[number]=${pageNumber.value}&page[size]=${pageSize.value}`, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
@@ -103,10 +107,29 @@ const loadSuggestions = () => {
     })
     .then(response => {
         suggestions.value = response.data.data
-        isSuggestionsTableLoading.value = false
+
+        response.data.data.forEach((suggestion:any) => {
+            chats.value.push({
+                type: suggestion.type,
+                content: suggestion.content,
+                source: "Koptan"
+            })
+        })
+
+        is_loading.value = false
     })
     .catch(() => {
-        isSuggestionsTableLoading.value = false
+        is_loading.value = false
+    })
+}
+
+const addUserChat = (content:string) => {
+
+    is_loading.value = true
+
+    chats.value.push({
+        content: content,
+        source: "You"
     })
 }
 
