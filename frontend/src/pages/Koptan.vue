@@ -155,6 +155,7 @@ const loadSuggestions = () => {
 const addUserChat = (content:string) => {
 
     is_loading.value = true
+    userInput.value = ''
 
     chats.value.push({
         content: content,

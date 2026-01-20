@@ -82,6 +82,25 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
+		sales_svc := services.SalesService{
+			Logger: logger,
+			Config: config,
+		}
+
+		sales, _, err := sales_svc.GetSalesPerday(1, 1, tenant_id, -1)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error(err.Error())
+			return
+		}
+
+		sales_json, err := json.Marshal(sales)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error(err.Error())
+			return
+		}
+
 		// Using OpenAI
 		llm, err := gollm.NewLLM(
 			gollm.SetProvider("ollama"),
@@ -97,8 +116,16 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Minute)
 		defer cancel()
 
-		// Create a basic prompt
-		prompt := gollm.NewPrompt(request.Data)
+		prompt := gollm.NewPrompt(
+			fmt.Sprintf("Context Data:\n%s\n\nUser Question: %s", sales_json, request.Data),
+			gollm.WithSystemPrompt("You are a senior business analyst. Your job is to look at sales and inventory data and provide actionable insights in natural language.", gollm.CacheTypeEphemeral),
+			gollm.WithDirectives(
+				"Identify the most urgent problem (e.g., low stock of high-sellers).",
+				"Highlight underperforming items.",
+				"Do not use tables or code; speak in a helpful, conversational tone.",
+				"Keep the response under 150 words.",
+			),
+		)
 
 		// Generate a llm_response
 		llm_response, err := llm.Generate(ctx, prompt)
