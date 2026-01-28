@@ -140,11 +140,6 @@ const items = ref([
         ]
     },
     {
-        label: 'Koptan AI',
-        icon: 'pi pi-lightbulb',
-        link: '/console/koptan'
-    },
-    {
         label: 'Automation',
         items: [
             {

@@ -32,7 +32,7 @@
                         <div class="flex flex-column gap-1" style="max-width: 80%;">
                             <span class="font-bold text-sm">Koptan</span>
                             <div class="p-3 border-round-2xl surface-card shadow-1 line-height-3">
-                                Hello! I'm Koptan, your AI assistant. Here are some suggestions based on your recent sales:
+                                Hello! I'm Koptan, your AI assistant. How can I help you ?
                             </div>
                         </div>
                     </div>
@@ -43,7 +43,7 @@
                             <span class="font-bold text-sm" v-if="chat.source != 'You'">{{chat.source}}</span>
                             <div class="p-3 border-round-2xl surface-card shadow-1 line-height-3">
                                 <div class="font-medium mb-1 text-primary-600 text-xs uppercase" v-if="chat.type">{{ chat.type }}</div>
-                                {{ chat.content }}
+                                <div v-html="chat.content" class="markdown-content"></div>
                             </div>
                         </div>
                     </div>
@@ -82,11 +82,14 @@ import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
+import MarkdownIt from 'markdown-it';
 
+
+const md = new MarkdownIt();
 const chats = ref<any[]>([])
 
 const suggestions = ref([])
-const is_loading = ref(true)
+const is_loading = ref(false)
 
 // Keep pagination logic implicitly for fetching, or just fetch a clean batch
 // Since it's a chat flow, maybe we just load the first batch for now.
@@ -105,7 +108,18 @@ const sendChat = (content: string) => {
     is_loading.value = true
 
     axios.post(`${import.meta.env.VITE_APP_BACKEND_HOST}/${import.meta.env.VITE_APP_BACKEND_VERSION}/api/koptan/chat`, {
-        data: content
+        data: {
+            messages: [
+                ...chats.value.map(chat => ({
+                    role: chat.source == 'You' ? 'user' : 'assistant',
+                    content: chat.content
+                })),
+                {
+                    role: 'user',
+                    content: content
+                }
+            ]
+        }
     }, {
         headers: {
             Authorization: `Bearer ${proxy.$zitadel?.oidcAuth.accessToken}`
@@ -115,7 +129,7 @@ const sendChat = (content: string) => {
         const koptanResponse = response.data.data
 
         chats.value.push({
-            content: koptanResponse,
+            content: md.render(koptanResponse.slice(1, -1)).replaceAll("\\n","</br>"),
             source: "Koptan"
         })
 
@@ -164,20 +178,6 @@ const addUserChat = (content:string) => {
 
     sendChat(content)
 }
-
-
-if (store.subscription.subscription_plan == 'gold') {
-    loadSuggestions()
-}
-
-watch(
-  () => store.subscription,
-  (newValue, _) => {
-    if (newValue.subscription_plan == 'gold') {
-        loadSuggestions()
-    }
-  }
-)
 
 </script>
 

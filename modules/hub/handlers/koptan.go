@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,8 +15,17 @@ import (
 	"github.com/nutrixpos/hub/modules/hub/services"
 	"github.com/nutrixpos/pos/common/logger"
 	core_handlers "github.com/nutrixpos/pos/modules/core/handlers"
-	"github.com/teilomillet/gollm"
 )
+
+type LLMRequest struct {
+	MetaData map[string]string `json:"metadata"`
+	Messages []LLMMessage      `json:"messages"`
+}
+
+type LLMMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
 
 func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +72,9 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 		}
 
 		request := struct {
-			Data string `json:"data"`
+			Data struct {
+				Messages []LLMMessage `json:"messages"`
+			} `json:"data"`
 		}{}
 
 		err := json.NewDecoder(r.Body).Decode(&request)
@@ -71,8 +83,8 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		if request.Data == "" {
-			http.Error(w, "data is required", http.StatusBadRequest)
+		if len(request.Data.Messages) == 0 {
+			http.Error(w, "messages are required", http.StatusBadRequest)
 			return
 		}
 
@@ -82,70 +94,77 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		sales_svc := services.SalesService{
-			Logger: logger,
-			Config: config,
+		messages := []LLMMessage{
+			{
+				Role:    "system",
+				Content: "You are a helpful restaurant manager, and a sales expert, and you are here to help the owner of the restaurant to boost his sales and manage his inventory.  You have set of tools that can help you get data from the restaurant database, you can run them then, analyse their output without exposing their output to the user, and return back the final answer to the user, make the output very concise and to the point.",
+			},
 		}
 
-		sales, _, err := sales_svc.GetSalesPerday(1, 1, tenant_id, -1)
+		for _, msg := range request.Data.Messages {
+			messages = append(messages, LLMMessage{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
+		}
+
+		llmReq := LLMRequest{
+			MetaData: map[string]string{
+				"tenant_id": tenant_id,
+				"label":     label,
+			},
+			Messages: messages,
+		}
+
+		LLMRequestJSON, err := json.Marshal(struct {
+			Data LLMRequest `json:"data"`
+		}{
+			Data: llmReq,
+		})
+
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error(err.Error())
+			logger.Error(fmt.Sprintf("Failed to encode LLMRequest: %v", err))
+			http.Error(w, "Failed to encode LLMRequest", http.StatusInternalServerError)
 			return
 		}
 
-		sales_json, err := json.Marshal(sales)
+		url := "http://localhost:8000"
+		req, err := http.NewRequest("POST", url, bytes.NewBufferString(string(LLMRequestJSON)))
+
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Error(err.Error())
+			logger.Error(fmt.Sprintf("Failed to create POST request: %v to koptan service", err))
+			http.Error(w, fmt.Sprintf("Failed to create POST request to koptan service"), http.StatusInternalServerError)
 			return
 		}
 
-		// Using OpenAI
-		llm, err := gollm.NewLLM(
-			gollm.SetProvider("ollama"),
-			gollm.SetModel("llama3.2:1b"),
-		)
-
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to create LLM: %v", err))
-			http.Error(w, fmt.Sprintf("Failed to create LLM: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Minute)
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
 		defer cancel()
+		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
 
-		prompt := gollm.NewPrompt(
-			fmt.Sprintf("Context Data:\n%s\n\nUser Question: %s", sales_json, request.Data),
-			gollm.WithSystemPrompt("You are a senior business analyst. Your job is to look at sales and inventory data and provide actionable insights in natural language.", gollm.CacheTypeEphemeral),
-			gollm.WithDirectives(
-				"Identify the most urgent problem (e.g., low stock of high-sellers).",
-				"Highlight underperforming items.",
-				"Do not use tables or code; speak in a helpful, conversational tone.",
-				"Keep the response under 150 words.",
-			),
-		)
+		defer resp.Body.Close()
 
-		// Generate a llm_response
-		llm_response, err := llm.Generate(ctx, prompt)
 		if err != nil {
-			log.Fatalf("Failed to generate text: %v", err)
+			logger.Error(fmt.Sprintf("Failed to send POST request: %v to koptan service", err))
+			http.Error(w, fmt.Sprintf("Failed to send POST request to koptan service"), http.StatusInternalServerError)
+			return
+		}
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to read upstream response: %v", err))
+			http.Error(w, "Failed to read response from LLM service", http.StatusInternalServerError)
+			return
 		}
 
 		response := core_handlers.JSONApiOkResponse{
-			Data: llm_response,
-		}
-
-		jsonResponse, err := json.Marshal(response)
-		if err != nil {
-			logger.Error(err.Error())
-			http.Error(w, "Failed to marshal order settings response", http.StatusInternalServerError)
-			return
+			Data: string(bodyBytes),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonResponse)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
