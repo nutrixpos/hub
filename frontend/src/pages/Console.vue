@@ -26,6 +26,11 @@
                                 </router-link>
                             </template>
                             <template #end>
+                                <router-link class="flex items-center mx-2 py-3 px-2 gap-2" to="/console/koptan">
+                                    <span class="pi pi-sparkles" />
+                                    <span>Koptan AI</span>
+                                    <Tag value="Beta" severity="info" class="text-xs ml-auto"></Tag>
+                                </router-link>                                
                                 <Skeleton v-if="is_loading_subscription" height="2rem" class="mx-3 my-3 w-15rem"></Skeleton>
                                 <router-link v-if="!is_loading_subscription" class="flex items-center mx-2 py-3 px-2 gap-2" to="/console/subscription">
                                     <span class="pi pi-receipt" />
@@ -77,7 +82,7 @@ import { useI18n } from 'vue-i18n'
 import { globalStore } from '@/stores';
 import axios from "axios";
 import ProgressSpinner from "primevue/progressspinner";
-import {Menu,Avatar, Badge, Skeleton,Divider} from 'primevue';
+import {Menu,Avatar, Badge, Skeleton,Divider, Tag} from 'primevue';
 
 
 const { proxy } = getCurrentInstance();
@@ -131,16 +136,6 @@ const items = ref([
                 label: 'Inventory',
                 icon: 'pi pi-warehouse',
                 link: '/console/inventory',
-            },
-        ]
-    },
-    {
-        label: 'Koptan AI',
-        items: [
-            {
-                label: 'Insights',
-                icon: 'pi pi-lightbulb',
-                link: '/console/koptan',
             },
         ]
     },
