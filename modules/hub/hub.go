@@ -1,9 +1,6 @@
 package hub
 
 import (
-	"net/http"
-	"time"
-
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/common"
 	"github.com/nutrixpos/hub/common/config"
@@ -70,7 +67,7 @@ func (h *HubModule) RegisterHttpHandlers(router *mux.Router, prefix string) {
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.GetSettings(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/settings", pos_middlewares.AllowCors(handlers.UpdateSettings(h.Config, h.Logger))).Methods("PATCH", "OPTIONS")
 	router.Handle("/v1/api/koptan/suggestions", pos_middlewares.AllowCors(handlers.GetKoptanSuggestions(h.Config, h.Logger))).Methods("GET", "OPTIONS")
-	router.Handle("/v1/api/koptan/chat", pos_middlewares.AllowCors(http.TimeoutHandler(handlers.KoptanChat(h.Config, h.Logger), 5*time.Minute, "Koptan chat timeout"))).Methods("POST", "OPTIONS")
+	router.Handle("/v1/api/koptan/chat", pos_middlewares.AllowCors(handlers.KoptanChat(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions", pos_middlewares.AllowCors(handlers.SubcriptionGET(h.Config, h.Logger))).Methods("GET", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/request", pos_middlewares.AllowCors(handlers.SubcriptionRequest(h.Config, h.Logger))).Methods("POST", "OPTIONS")
 	router.Handle("/v1/api/subscriptions/payment_callback", pos_middlewares.AllowCors(handlers.PaymobSubscribeCallbackPOST(h.Config, h.Logger))).Methods("POST", "OPTIONS")

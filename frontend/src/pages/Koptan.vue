@@ -114,10 +114,6 @@ const sendChat = (content: string) => {
                     role: chat.source == 'You' ? 'user' : 'assistant',
                     content: chat.content
                 })),
-                {
-                    role: 'user',
-                    content: content
-                }
             ]
         }
     }, {

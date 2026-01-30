@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/nutrixpos/hub/common"
@@ -72,8 +71,8 @@ func main() {
 		Handler: router,
 		Addr:    ":8081",
 		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 0,
+		ReadTimeout:  0,
 	}
 
 	// Force IPv4 by listening on "tcp4"

@@ -30,6 +30,9 @@ type LLMMessage struct {
 func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
+		defer cancel()
+
 		tenant_id := "1"
 		label := "dev"
 
@@ -77,9 +80,17 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			} `json:"data"`
 		}{}
 
-		err := json.NewDecoder(r.Body).Decode(&request)
+		requestBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error(err.Error())
+			return
+		}
+		r.Body.Close()
+
+		if err := json.Unmarshal(requestBytes, &request); err != nil {
+			logger.Error(fmt.Sprintf("Failed to parse JSON: %v", err))
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 			return
 		}
 
@@ -137,12 +148,8 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
-		defer cancel()
 		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-
 		defer resp.Body.Close()
-
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failed to send POST request: %v to koptan service", err))
 			http.Error(w, fmt.Sprintf("Failed to send POST request to koptan service"), http.StatusInternalServerError)
@@ -160,11 +167,22 @@ func KoptanChat(config config.Config, logger logger.ILogger) http.HandlerFunc {
 			Data: string(bodyBytes),
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		data, err := json.Marshal(response)
+		if err != nil {
+			// No headers have been sent yet, so we can return a 500
+			http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
 			return
 		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		n, err := w.Write(data)
+		if err != nil {
+			// Note: If headers were already sent, this might only be useful for logging.
+			logger.Error(fmt.Sprintf("Write failed: %v (bytes written: %d)", err, n))
+			return
+		}
+
 	}
 }
 
